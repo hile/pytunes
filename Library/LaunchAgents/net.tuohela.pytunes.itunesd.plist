@@ -1,0 +1,16 @@
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.tuohela.pytunes.itunesd</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/itunesd</string>
+  </array>
+  <key>StandardOutPath</key> <string>/Users/hile/.launchd.log</string>
+  <key>StandardErrorPath</key> <string>/Users/hile/.launchd.errors</string>
+</dict>
+</plist>

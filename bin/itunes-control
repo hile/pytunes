@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+"""
+Example script to view and control itunes playback status
+"""
+
+from musa.cli import MusaScript,MusaCommand,MusaScriptError
+from pytunes import iTunesError
+from pytunes.client import iTunes
+
+script = MusaScript('itunes-control','Control itunes playback',subcommands=False)
+script.add_argument('-p','--play-pause',action='store_true',help='Play/pause')
+script.add_argument('-f','--next',action='store_true',help='Next track')
+script.add_argument('-b','--previous',action='store_true',help='Previous track')
+script.add_argument('-r','--random',action='store_true',help='Toggle random play')
+script.add_argument('-s','--stop',action='store_true',help='Stop')
+script.add_argument('-i','--info',action='store_true',help='Info about current track')
+script.add_argument('-u','--shuffle',action='store_true',help='Toggle shuffle')
+script.add_argument('-e','--repeat',help='Change repeat value (off,one,all)')
+script.add_argument('-o','--volume',type=int,help='Change volume (0-100)')
+script.add_argument('-v','--verbose',action='store_true',help='Verbose messages')
+args = script.parse_args()
+
+itunes = iTunes()
+
+if args.volume:
+    try:
+        itunes.volume(args.volume)
+    except iTunesError,emsg:
+        script.exit(1,emsg)
+
+if args.play_pause and args.stop:
+    script.exit(1,'Conflicting flags: --play-pause and --stop')
+if args.previous and args.next:
+    script.exit(1,'Conflicting flags: --previous and --next')
+
+if args.shuffle:
+    itunes.shuffle = not itunes.shuffle and True or False
+if args.repeat:
+    try:
+        itunes.repeat = args.repeat
+    except iTunesError,emsg:
+        script.exit(1,emsg)
+
+if args.previous:
+    itunes.previous()
+if args.next:
+    itunes.next()
+if args.play_pause:
+    if itunes.status == 'playing':
+        script.log.info('Stopping iTunes playback')
+        itunes.pause()
+    else:
+        script.log.info('Starting iTunes playback')
+        itunes.play()
+if args.stop:
+    if itunes.status in ['playing','paused']:
+        script.log.info('Stopping iTunes playback')
+        itunes.stop()
+    else:
+        script.log.info('iTunes was already stopped')
+
+if args.info:
+    if args.verbose:
+        print itunes.current.path
+    print """Artist:  %(artist)s
+Album:   %(album)s
+Title:   %(title)s
+Genre:   %(genre)s
+Year:    %(year)s""" % (itunes.current)
+    if args.verbose:
+        print 'Random:  %s' % (itunes.random and 'On' or 'Off')
+        print 'Repeat:  %s' % itunes.repeat
+

@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import os
+
+from musa import normalized
+from musa.cli import MusaScript,MusaCommand,MusaScriptError
+from musa.playlist import m3uPlaylist,m3uPlaylistDirectory,PlaylistError
+
+from pytunes import iTunesError
+from pytunes.playlist import iTunesPlaylist,AlliTunesPlaylists
+
+DEFAULT_DIRECTORY = os.path.expanduser('~/Music/Playlists')
+
+script = MusaScript('itunes-playlist','Import and export itunes playlists',subcommands=False    )
+script.add_argument('-e','--export',action='store_true',help='Export playlists')
+script.add_argument('-i','--import',dest='import_pl',action='store_true',help='Import playlists')
+script.add_argument('-l','--list',action='store_true',help='List playlists')
+script.add_argument('-s','--smart-playlists',action='store_true',help='Include smart playlists')
+script.add_argument('-E','--ignore-empty',action='store_true',default=True,help='Ignore empty playlists')
+script.add_argument('-D','--directory',default=DEFAULT_DIRECTORY,help='Playlist directory for m3u files')
+args = script.parse_args()
+
+if args.export:
+    if not os.path.isdir(args.directory):
+        os.makedirs(args.directory)
+    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+        try:
+            folder = os.path.dirname(os.path.join(args.directory,playlist.path))
+        except AttributeError:
+            folder = None
+        m3u = m3uPlaylist(playlist.name,folder=folder)
+        for track in playlist:
+            m3u.append(track.path)
+        if args.ignore_empty and len(m3u)==0:
+            script.log.debug('Ignore empty playlist: %s' % m3u)
+            continue
+        try:
+            m3u.write()
+        except PlaylistError,e:
+            script.log.info('Error writing playlist %s: %s' % (m3u.path,e))
+            continue
+        script.log.info('Exported: %s %d songs' % (m3u.path,len(m3u)))
+
+elif args.import_pl:
+    if not os.path.isdir(args.directory):
+        script.exit(1,'No such directory: %s' % args.directory)
+    for playlist in m3uPlaylistDirectory(path=args.directory):
+        playlist.read()
+        ipl = iTunesPlaylist(playlist.name)
+        for track  in playlist:
+            ipl.add(track)
+        script.log.info('Imported: %s %d songs' % (playlist.path,len(playlist)))
+
+elif args.list:
+    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+        print playlist.path
+
+else:
+    script.exit(1,script.get_usage())
+
