@@ -58,7 +58,7 @@ for entry in library:
         library.delete(entry)
         continue
 
-    if not tree.paths.has_key(path):
+    if not tree.paths.has_key(tree.relative_path(path)):
         if not os.path.isfile(path):
             script.log.info('Removing non-existing: "%s"' % path)
             library.delete(entry)
