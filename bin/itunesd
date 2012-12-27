@@ -8,7 +8,7 @@ prefix = os.sep.join(os.path.realpath(sys.argv[0]).split(os.sep)[:-2])
 libs = os.path.join(prefix,'lib','python%s'%pymajor,'site-packages')
 sys.path.insert(0,libs)
 try:
-    for egg in ['darwinist','pytunes','appscript','lxml']:
+    for egg in ['darwinist','systematic','musa','configobj','pytunes','setproctitle','appscript','lxml']:
         sys.path.insert(0,glob.glob('%s/%s-*' % (libs,egg))[-1])
 except IndexError:
     pass
@@ -53,20 +53,20 @@ while True:
     # Optional XML output
     if args.xml_output:
         xml = ET.tostring(
-            status.songinfo(xml_output=True,export_albumart=True),
+           status.songinfo(xml_output=True,export_albumart=True),
             pretty_print=True,
             xml_declaration=True
         )
         try:
-            open(os.path.expanduser(opts.xml_output),'w').write(xml)
+            open(os.path.expanduser(args.xml_output),'w').write(xml)
         except IOError,emsg:
-            print 'Error writing XML file %s: %s' % (opts.xml_output,emsg)
+            print 'Error writing XML file %s: %s' % (args.xml_output,emsg)
 
 if args.xml_output:
     try:
-        os.unlink(os.path.expanduser(opts.xml_output))
+        os.unlink(os.path.expanduser(args.xml_output))
     except IOError,emsg:
-        print 'Error removing XML file %s: %s' % (opts.xml_output,emsg)
+        print 'Error removing XML file %s: %s' % (args.xml_output,emsg)
 
 fd.close()
 

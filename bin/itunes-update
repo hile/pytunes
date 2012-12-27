@@ -32,6 +32,7 @@ if args.position:
 try:
     tree = iTunesMusicTree(itunes_path=args.itunes_directory,tree_path=args.music_path)
     tree.load()
+    tree_paths = tree.realpaths
 except iTunesError,e:
     script.exit(1,e)
 except MusaError,e:
@@ -58,7 +59,7 @@ for entry in library:
         library.delete(entry)
         continue
 
-    if not tree.paths.has_key(tree.relative_path(path)):
+    if not tree_paths.has_key(path):
         if not os.path.isfile(path):
             script.log.info('Removing non-existing: "%s"' % path)
             library.delete(entry)
@@ -84,7 +85,7 @@ start = time.time()
 processed = 0
 script.log.info('Checking itunes against library files')
 if args.position is None:
-    for path in sorted(tree.paths.keys()):
+    for path in sorted(tree_paths.keys()):
         if not itunes_files.has_key(path):
             script.log.info('Adding: %s' % path)
             try:
