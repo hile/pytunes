@@ -56,5 +56,5 @@ elif args.list:
         print playlist.path
 
 else:
-    script.exit(1,script.get_usage())
+    script.exit(1,'No operation selected')
 
