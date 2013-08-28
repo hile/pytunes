@@ -9,6 +9,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/local/bin/itunesd</string>
+    <string>--notify</string>
   </array>
   <key>StandardOutPath</key> <string>/Users/hile/.launchd.log</string>
   <key>StandardErrorPath</key> <string>/Users/hile/.launchd.errors</string>

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import shutil
 
 from musa import normalized
 from musa.cli import MusaScript,MusaCommand,MusaScriptError
@@ -12,48 +13,161 @@ from pytunes.playlist import iTunesPlaylist,AlliTunesPlaylists
 DEFAULT_DIRECTORY = os.path.expanduser('~/Music/Playlists')
 
 script = MusaScript('itunes-playlist','Import and export itunes playlists',subcommands=False    )
-script.add_argument('-e','--export',action='store_true',help='Export playlists')
-script.add_argument('-i','--import',dest='import_pl',action='store_true',help='Import playlists')
-script.add_argument('-l','--list',action='store_true',help='List playlists')
-script.add_argument('-s','--smart-playlists',action='store_true',help='Include smart playlists')
-script.add_argument('-E','--ignore-empty',action='store_true',default=True,help='Ignore empty playlists')
-script.add_argument('-D','--directory',default=DEFAULT_DIRECTORY,help='Playlist directory for m3u files')
+script.add_argument('-l','--list', action='store_true', help='List playlists')
+script.add_argument('-f','--format', help='List or filename formatting string')
+script.add_argument('-y','--yearly', action='store_true', help='Order exported tracks by year')
+script.add_argument('-x','--export-files', action='store_true', help='Export files for decks')
+script.add_argument('-e','--export', action='store_true', help='Export playlists')
+script.add_argument('-i','--import',dest='import_pl', action='store_true', help='Import playlists')
+script.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+script.add_argument('-E','--ignore-empty', action='store_true', help='Ignore empty playlists')
+script.add_argument('-D','--directory', default=DEFAULT_DIRECTORY, help='Playlist directory for m3u files')
+script.add_argument('playlists', nargs='*', help='Playlists to process')
 args = script.parse_args()
+
+if args.playlists:
+    playlists = []
+    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+        if playlist.path in args.playlists:
+            playlists.append(playlist)
+
+else:
+    playlists = AlliTunesPlaylists(include_smart_playlists=args.smart_playlists)
 
 if args.export:
     if not os.path.isdir(args.directory):
         os.makedirs(args.directory)
-    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+
+    for playlist in playlists:
+
         try:
             folder = os.path.dirname(os.path.join(args.directory,playlist.path))
         except AttributeError:
             folder = None
+
         m3u = m3uPlaylist(playlist.name,folder=folder)
         for track in playlist:
             m3u.append(track.path)
+
         if args.ignore_empty and len(m3u)==0:
             script.log.debug('Ignore empty playlist: %s' % m3u)
             continue
+
         try:
             m3u.write()
         except PlaylistError,e:
             script.log.info('Error writing playlist %s: %s' % (m3u.path,e))
             continue
+
         script.log.info('Exported: %s %d songs' % (m3u.path,len(m3u)))
 
 elif args.import_pl:
     if not os.path.isdir(args.directory):
         script.exit(1,'No such directory: %s' % args.directory)
+
     for playlist in m3uPlaylistDirectory(path=args.directory):
         playlist.read()
         ipl = iTunesPlaylist(playlist.name)
+
         for track  in playlist:
             ipl.add(track)
+
         script.log.info('Imported: %s %d songs' % (playlist.path,len(playlist)))
 
+elif args.export_files:
+    for playlist in playlists:
+        path = os.path.join(args.directory, playlist.path)
+        if not os.path.isdir(path):
+            try:
+                os.makedirs(path)
+            except OSError,(ecode,emsg):
+                script.exit(1, 'Error creating playlist folder %s: %s' % (path, emsg))
+
+        tracks = []
+        if args.yearly:
+            years = {}
+            for track in playlist:
+                if track.year not in years:
+                    years[track.year] = []
+                years[track.year].append(track)
+
+                for year in sorted(years.keys()):
+                    years[year].sort(lambda x,y: cmp(x.artist,y.artist))
+
+                    first = True
+                    for track in years[year]:
+                        filename = '%04d %s - %s.%s' % (year, track.artist, track.name, track.extension)
+                        tracks.append( (filename, track) )
+
+        elif args.format:
+            index = 1
+            for track in playlist:
+                try:
+                    filename = '%03d %s.%s' % (index, os.path.join(path, args.format % track), track.extension)
+                    tracks.append( (filename, track) )
+                except KeyError,emsg:
+                    script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+                index += 1
+
+        else:
+            index = 1
+            for track in playlist:
+                filename = '%03d %s' % (index, track.path)
+                tracks.append( (filename, track) )
+
+        for filename,original in tracks:
+            filename = os.path.join(path, filename.replace('/', ''))
+            if os.path.isfile(filename):
+                continue
+
+            try:
+                print 'Writing', filename
+                shutil.copyfile(original.path, filename)
+            except OSError,(ecode,emsg):
+                script.exit(1, 'Error writing file %s: %s' % (filename, emsg) )
 elif args.list:
-    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
-        print playlist.path
+    if not args.playlists:
+        for playlist in playlists:
+            print playlist.path
+
+    else:
+        for playlist in playlists:
+
+            years = {}
+            for track in playlist:
+                if args.yearly:
+                    if track.year not in years:
+                        years[track.year] = []
+
+                    years[track.year].append(track)
+
+                elif args.format:
+                    try:
+                        print args.format % track
+                    except KeyError,emsg:
+                        script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+
+                else:
+                    print track
+
+            if args.yearly:
+                for year in sorted(years.keys()):
+                    years[year].sort(lambda x,y: cmp(x.artist,y.artist))
+
+                    first = True
+                    for track in years[year]:
+
+                        if args.format:
+                            try:
+                                print args.format % track
+                            except KeyError,emsg:
+                                script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+
+                        elif first:
+                            print '%(year)4s\t%(artist)s\t%(name)s' % track
+                            first = False
+                        else:
+                            print '\t%(artist)s\t%(name)s' % track
 
 else:
     script.exit(1,'No operation selected')

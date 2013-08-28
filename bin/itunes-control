@@ -60,14 +60,18 @@ if args.stop:
         script.log.info('iTunes was already stopped')
 
 if args.info:
-    if args.verbose:
-        print itunes.current.path
-    print """Artist:  %(artist)s
+    if itunes.current:
+        if args.verbose:
+            script.message(itunes.current.path)
+        script.message("""Artist:  %(artist)s
 Album:   %(album)s
 Title:   %(title)s
 Genre:   %(genre)s
-Year:    %(year)s""" % (itunes.current)
+Year:    %(year)s""" % (itunes.current))
+    else:
+        script.message('No song selected in iTunes')
     if args.verbose:
-        print 'Random:  %s' % (itunes.random and 'On' or 'Off')
-        print 'Repeat:  %s' % itunes.repeat
-
+        repeat = itunes.repeat
+        if itunes.repeat:
+            script.message('Random:  %s' % (itunes.random and 'On' or 'Off'))
+            script.message('Repeat:  %s' % repeat)
