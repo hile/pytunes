@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import fnmatch
 import shutil
 
 from musa import normalized
@@ -28,8 +29,10 @@ args = script.parse_args()
 if args.playlists:
     playlists = []
     for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
-        if playlist.path in args.playlists:
-            playlists.append(playlist)
+        path = playlist.path
+        for match in args.playlists:
+            if fnmatch.fnmatch(playlist.path,path):
+                playlists.append(playlist)
 
 else:
     playlists = AlliTunesPlaylists(include_smart_playlists=args.smart_playlists)
@@ -76,7 +79,10 @@ elif args.import_pl:
 
 elif args.export_files:
     for playlist in playlists:
+        script.log.debug('Processing: %s' % playlist)
+
         path = os.path.join(args.directory, playlist.path)
+
         if not os.path.isdir(path):
             try:
                 os.makedirs(path)
@@ -91,19 +97,21 @@ elif args.export_files:
                     years[track.year] = []
                 years[track.year].append(track)
 
-                for year in sorted(years.keys()):
-                    years[year].sort(lambda x,y: cmp(x.artist,y.artist))
+            for year in sorted(years.keys()):
+                years[year].sort(lambda x,y: cmp(x.artist,y.artist))
 
-                    first = True
-                    for track in years[year]:
-                        filename = '%04d %s - %s.%s' % (year, track.artist, track.name, track.extension)
-                        tracks.append( (filename, track) )
+                first = True
+                for track in years[year]:
+                    name = '%s - %s.%s' % (track.artist, track.name, track.extension)
+                    filename = os.path.join('%s'% year,name.replace(os.sep,''))
+                    tracks.append( (filename, track) )
 
         elif args.format:
             index = 1
             for track in playlist:
                 try:
-                    filename = '%03d %s.%s' % (index, os.path.join(path, args.format % track), track.extension)
+                    name = '%s' % args.format % track
+                    filename = '%03d %s.%s' % (index, os.path.join(path, name.replace(os.sep,'')), track.extension)
                     tracks.append( (filename, track) )
                 except KeyError,emsg:
                     script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
@@ -116,19 +124,28 @@ elif args.export_files:
                 tracks.append( (filename, track) )
 
         for filename,original in tracks:
-            filename = os.path.join(path, filename.replace('/', ''))
+            filename = os.path.join(path, filename)
+            script.log.debug('Processing %s' % filename)
             if os.path.isfile(filename):
                 continue
 
+            file_dir = os.path.dirname(filename)
+            if not os.path.isdir(file_dir):
+                try:
+                    os.makedirs(file_dir)
+                except OSError,(ecode,emsg):
+                    script.exit(1, 'Error creating directory %s: %s' % (filename, emsg) )
+
             try:
-                print 'Writing', filename
+                script.message('Writing %s' % filename)
                 shutil.copyfile(original.path, filename)
             except OSError,(ecode,emsg):
                 script.exit(1, 'Error writing file %s: %s' % (filename, emsg) )
+
 elif args.list:
     if not args.playlists:
         for playlist in playlists:
-            print playlist.path
+            script.message(playlist.path)
 
     else:
         for playlist in playlists:
@@ -143,12 +160,12 @@ elif args.list:
 
                 elif args.format:
                     try:
-                        print args.format % track
+                        script.message(args.format % track)
                     except KeyError,emsg:
                         script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
 
                 else:
-                    print track
+                    script.message(track)
 
             if args.yearly:
                 for year in sorted(years.keys()):
@@ -159,15 +176,15 @@ elif args.list:
 
                         if args.format:
                             try:
-                                print args.format % track
+                                script.message(args.format % track)
                             except KeyError,emsg:
                                 script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
 
                         elif first:
-                            print '%(year)4s\t%(artist)s\t%(name)s' % track
+                            script.message('%(year)4s\t%(artist)s\t%(name)s' % track)
                             first = False
                         else:
-                            print '\t%(artist)s\t%(name)s' % track
+                            script.message('\t%(artist)s\t%(name)s' % track)
 
 else:
     script.exit(1,'No operation selected')
