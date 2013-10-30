@@ -7,7 +7,6 @@ import time
 
 REQUIRED_EGGS = (
     'darwinist',
-    'systematic',
     'soundforest',
     'configobj',
     'pytunes',
