@@ -8,7 +8,7 @@ import time
 REQUIRED_EGGS = (
     'darwinist',
     'systematic',
-    'musa',
+    'soundforest',
     'configobj',
     'pytunes',
     'setproctitle',
@@ -27,7 +27,7 @@ except IndexError:
 
 from lxml import etree as ET
 
-from systematic.shell import Script,ScriptError
+from soundforest.cli import Script, ScriptError
 from pytunes.status import iTunesStatus
 from darwinist.notification import NotificationClient
 

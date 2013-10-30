@@ -3,11 +3,12 @@
 Example script to view and control itunes playback status
 """
 
-from musa.cli import MusaScript,MusaCommand,MusaScriptError
+from soundforest.cli import Script, ScriptError
+
 from pytunes import iTunesError
 from pytunes.client import iTunes
 
-script = MusaScript('itunes-control','Control itunes playback',subcommands=False)
+script = Script('itunes-control','Control itunes playback',subcommands=False)
 script.add_argument('-p','--play-pause',action='store_true',help='Play/pause')
 script.add_argument('-f','--next',action='store_true',help='Next track')
 script.add_argument('-b','--previous',action='store_true',help='Previous track')
@@ -30,11 +31,13 @@ if args.volume:
 
 if args.play_pause and args.stop:
     script.exit(1,'Conflicting flags: --play-pause and --stop')
+
 if args.previous and args.next:
     script.exit(1,'Conflicting flags: --previous and --next')
 
 if args.shuffle:
     itunes.shuffle = not itunes.shuffle and True or False
+
 if args.repeat:
     try:
         itunes.repeat = args.repeat
@@ -43,8 +46,10 @@ if args.repeat:
 
 if args.previous:
     itunes.previous()
+
 if args.next:
     itunes.next()
+
 if args.play_pause:
     if itunes.status == 'playing':
         script.log.info('Stopping iTunes playback')
@@ -52,6 +57,7 @@ if args.play_pause:
     else:
         script.log.info('Starting iTunes playback')
         itunes.play()
+
 if args.stop:
     if itunes.status in ['playing','paused']:
         script.log.info('Stopping iTunes playback')
@@ -70,6 +76,7 @@ Genre:   %(genre)s
 Year:    %(year)s""" % (itunes.current))
     else:
         script.message('No song selected in iTunes')
+
     if args.verbose:
         repeat = itunes.repeat
         if itunes.repeat:

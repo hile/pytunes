@@ -13,9 +13,7 @@ setup(
     name = 'pytunes',
     version = VERSION,
     zip_safe = False,
-    install_requires = [
-        'musa','soundforest','appscript','configobj','systematic','darwinist'
-    ],
+    install_requires = [ 'soundforest', 'appscript', 'configobj', 'darwinist' ],
 
     scripts = glob.glob('bin/*'),
     packages = ['pytunes'],
