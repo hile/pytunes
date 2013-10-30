@@ -7,8 +7,7 @@ if sys.platform != 'darwin':
     print 'ERROR: this module uses applescript and only works in OS/X, your system is %s' % sys.platform
     sys.exit(1)
 
-VERSION='2.0.0'
-
+VERSION='3.0.0'
 setup(
     name = 'pytunes',
     version = VERSION,
