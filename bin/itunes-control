@@ -8,49 +8,57 @@ from soundforest.cli import Script, ScriptError
 from pytunes import iTunesError
 from pytunes.client import iTunes
 
-script = Script('itunes-control','Control itunes playback',subcommands=False)
-script.add_argument('-p','--play-pause',action='store_true',help='Play/pause')
-script.add_argument('-f','--next',action='store_true',help='Next track')
-script.add_argument('-b','--previous',action='store_true',help='Previous track')
-script.add_argument('-r','--random',action='store_true',help='Toggle random play')
-script.add_argument('-s','--stop',action='store_true',help='Stop')
-script.add_argument('-i','--info',action='store_true',help='Info about current track')
-script.add_argument('-u','--shuffle',action='store_true',help='Toggle shuffle')
-script.add_argument('-e','--repeat',help='Change repeat value (off,one,all)')
-script.add_argument('-o','--volume',type=int,help='Change volume (0-100)')
-script.add_argument('-v','--verbose',action='store_true',help='Verbose messages')
+COMMAND_CHOICES = (
+    'play',
+    'stop',
+    'next',
+    'previous',
+    'info',
+    'volume'
+)
+
+script = Script(subcommands=False)
+script.add_argument('command', choices=COMMAND_CHOICES, help='Command to execute')
+script.add_argument('value', nargs='?' , help='Volume value (0-100)')
+script.add_argument('-v', '--verbose', action='store_true', help='Verbose messages')
 args = script.parse_args()
 
 itunes = iTunes()
 
-if args.volume:
-    try:
-        itunes.volume(args.volume)
-    except iTunesError,emsg:
-        script.exit(1,emsg)
+if args.command == 'volume':
+    if args.value is None:
+        script.message('volume %d %%' % itunes.volume)
 
-if args.play_pause and args.stop:
-    script.exit(1,'Conflicting flags: --play-pause and --stop')
+    else:
+        try:
+            if args.value[:1] == '+':
+                args.value = itunes.volume + int(args.value[1:])
+                if args.value > 100:
+                    args.value = 100
 
-if args.previous and args.next:
-    script.exit(1,'Conflicting flags: --previous and --next')
+            elif args.value[:1] == '-':
+                args.value = itunes.volume - int(args.value[1:])
+                if args.value < 0:
+                    args.value = 0
 
-if args.shuffle:
-    itunes.shuffle = not itunes.shuffle and True or False
+            else:
+                args.value = int(args.value)
 
-if args.repeat:
-    try:
-        itunes.repeat = args.repeat
-    except iTunesError,emsg:
-        script.exit(1,emsg)
+        except ValueError:
+            script.exit(1, 'Invalid volume value %s' % args.value)
 
-if args.previous:
+        try:
+            itunes.volume = args.value
+        except iTunesError,emsg:
+            script.exit(1,emsg)
+
+if args.command == 'previous':
     itunes.previous()
 
-if args.next:
+if args.command == 'next':
     itunes.next()
 
-if args.play_pause:
+if args.command == 'play':
     if itunes.status == 'playing':
         script.log.info('Stopping iTunes playback')
         itunes.pause()
@@ -58,27 +66,21 @@ if args.play_pause:
         script.log.info('Starting iTunes playback')
         itunes.play()
 
-if args.stop:
-    if itunes.status in ['playing','paused']:
+if args.command == 'stop':
+    if itunes.status in ('playing', 'paused',):
         script.log.info('Stopping iTunes playback')
         itunes.stop()
     else:
         script.log.info('iTunes was already stopped')
 
-if args.info:
-    if itunes.current:
+if args.command == 'info':
+    if itunes.current_track:
         if args.verbose:
-            script.message(itunes.current.path)
+            script.message(itunes.current_track.path)
         script.message("""Artist:  %(artist)s
 Album:   %(album)s
 Title:   %(title)s
 Genre:   %(genre)s
-Year:    %(year)s""" % (itunes.current))
+Year:    %(year)s""" % (itunes.current_track))
     else:
         script.message('No song selected in iTunes')
-
-    if args.verbose:
-        repeat = itunes.repeat
-        if itunes.repeat:
-            script.message('Random:  %s' % (itunes.random and 'On' or 'Off'))
-            script.message('Repeat:  %s' % repeat)

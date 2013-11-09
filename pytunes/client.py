@@ -82,92 +82,92 @@ class iTunes(object):
             except AttributeError:
                 raise AttributeError('No such iTunes attribute: %s' % attr)
 
-        @property
-        def library(self):
-            for src in self.itunes.sources.get():
-                if src.kind.get() == appscript.k.library:
-                    return src
+    @property
+    def library(self):
+        for src in self.itunes.sources.get():
+            if src.kind.get() == appscript.k.library:
+                return src
 
+        return None
+
+    @property
+    def status(self):
+        s = self.itunes.player_state.get()
+        try:
+            return ITUNES_PLAYER_STATE_NAMES[s]
+
+        except KeyError:
+            return 'Unknown (%s' % (s)
+
+    @property
+    def current_track(self):
+        try:
+            return Track(self.itunes.current_track())
+
+        except appscript.reference.CommandError:
             return None
 
-        @property
-        def status(self):
-            s = self.itunes.player_state.get()
-            try:
-                return ITUNES_PLAYER_STATE_NAMES[s]
+    @property
+    def repeat(self):
+        try:
+            return filter(lambda k:
+                REPEAT_VALUES[k]==self.itunes.current_playlist.song_repeat.get(),
+                REPEAT_VALUES.keys()
+            )[0]
 
-            except KeyError:
-                return 'Unknown (%s' % (s)
+        except appscript.reference.CommandError:
+            return None
 
-        @property
-        def current_track(self):
-            try:
-                return Track(self.itunes.current_track())
+    @repeat.setter
+    def repeat(self, value):
+        try:
+            self.itunes.current_playlist.song_repeat.set(to=REPEAT_VALUES[value])
 
-            except appscript.reference.CommandError:
-                return None
+        except KeyError:
+            raise iTunesError('Invalid repeat value %s' % value)
 
-        @property
-        def repeat(self):
-            try:
-                return filter(lambda k:
-                    REPEAT_VALUES[k]==self.itunes.current_playlist.song_repeat.get(),
-                    REPEAT_VALUES.keys()
-                )[0]
+    @property
+    def shuffle(self):
+        try:
+            return self.itunes.current_playlist.shuffle.get()
 
-            except appscript.reference.CommandError:
-                return None
+        except appscript.reference.CommandError:
+            return None
 
-        @repeat.setter
-        def repeat(self, value):
-            try:
-                self.itunes.current_playlist.song_repeat.set(to=REPEAT_VALUES[value])
+    @shuffle.setter
+    def shuffle(self, value):
+        value = value and True or False
+        self.itunes.current_playlist.shuffle.set(to=value)
 
-            except KeyError:
-                raise iTunesError('Invalid repeat value %s' % value)
+    @property
+    def volume(self):
+        return self.itunes.sound_volume.get()
 
-        @property
-        def shuffle(self):
-            try:
-                return self.itunes.current_playlist.shuffle.get()
+    @volume.setter
+    def volume(self, value):
+        if not isinstance(value, int):
+            raise iTunesError('Volume adjustment must be integer value')
 
-            except appscript.reference.CommandError:
-                return None
+        if value < 0 or value > 100:
+            raise iTunesError('Volume adjustment must be in range 0-100')
 
-        @shuffle.setter
-        def shuffle(self, value):
-            value = value and True or False
-            self.itunes.current_playlist.shuffle.set(to=value)
+        self.itunes.sound_volume.set(to=value)
 
-        @property
-        def volume(self):
-            return self.itunes.sound_volume.get()
+    def previous(self):
+        """Previous track
 
-        @volume.setter
-        def volume(self, value):
-            if not isinstance(value, int):
-                raise iTunesError('Volume adjustment must be integer value')
+        Jump to previous track
 
-            if value < 0 or value > 100:
-                raise iTunesError('Volume adjustment must be in range 0-100')
+        """
+        return self.previous_track()
 
-            self.itunes.sound_volume.set(to=value)
+    def next(self):
+        """Next track
 
-        def previous(self):
-            """Previous track
+        Jump to next track
 
-            Jump to previous track
-
-            """
-            return self.previous_track()
-
-        def next(self):
-            """Next track
-
-            Jump to next track
-
-            """
-            return self.next_track()
+        """
+        return self.next_track()
 
 class Track(object):
     """Track in itunes library
