@@ -1,10 +1,17 @@
-#!/usr/bin/env python
+"""
+ITC Albumart files
+"""
 
 import os
 from struct import pack, unpack
 from PIL import ImageFile
 
 class ITCArtworkFile(object):
+    """ITC Albumart
+
+    ITC Albumart file parser
+
+    """
     def __init__(self, path):
         self.path = path
         (self.library_id, self.track_id) = \
@@ -24,43 +31,26 @@ class ITCArtworkFile(object):
 
     def __str__(self):
         return '%s track %s %s' % (
-            self.itc_type, self.track_id, self.image.format.lower()
+            self.itc_type,
+            self.track_id,
+            self.image.format.lower()
         )
 
     def write(self, outputdir, filename=None):
+        """Write ITC to file
+
+        Write ITC image output file specified directory
+
+        """
         if not filename:
             filename = os.path.join(
-                outputdir,
-                '%s.%s' % (self.track_id, self.image.format.lower())
+                outputdir, '%s.%s' % (
+                    self.track_id,
+                    self.image.format.lower()
+                )
             )
 
         if self.image.mode != "RGB":
             self.image = self.image.convert('RGB')
 
         self.image.save(filename)
-
-# Example use for this module
-if __name__ == '__main__':
-    import sys
-
-    try:
-        outdir = sys.argv[1]
-    except IndexError:
-        outdir = '/tmp'
-
-    artwork_dir = os.path.join(os.getenv('HOME'), 'Music/iTunes/Album Artwork')
-    if not os.path.isdir(artwork_dir):
-        print 'No such directory: %s' % artwork_dir
-        sys.exit(1)
-
-    print 'Writing downloaded artwork files to %s' % outdir
-    for root, dirs, files in os.walk(artwork_dir):
-        for f in files:
-            f = os.path.join(root, f)
-            if os.path.splitext(f)[1] != '.itc': continue
-            itcfile = ITCArtworkFile(f)
-            if itcfile.itc_type == 'locl':
-                continue
-            print '%s.%s' % (itcfile.track_id, itcfile.image.format.lower())
-            itcfile.write(outdir)
-
