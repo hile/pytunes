@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+"""iTunes playlists
+
+Mapping of iTunes playlists to soundforest playlists
+
+"""
 
 import os
 import sys
@@ -17,6 +21,11 @@ SKIP_PLAYLISTS = (
 )
 
 def AlliTunesPlaylists(client=None, skipDefaultLists=True, include_smart_playlists=False):
+    """All iTunes playlists
+
+    Return all iTunes playlists as iTunesPlaylist objects
+
+    """
     client = client is not None and client or iTunes()
     playlists = []
     for pl in client.user_playlists.get():
@@ -29,6 +38,12 @@ def AlliTunesPlaylists(client=None, skipDefaultLists=True, include_smart_playlis
     return playlists
 
 class iTunesPlaylist(object):
+    """iTunes playlist
+
+    Abstraction of a single iTunes playlist
+
+    """
+
     def __init__(self, name='library', app=None):
         self.itunes = app is not None and app or iTunes()
         self.__next = 0
@@ -62,6 +77,11 @@ class iTunesPlaylist(object):
 
     @property
     def parent(self):
+        """Parent playlist
+
+        Return parent playlist or playlist folder
+
+        """
         try:
             return self.playlist.parent.get().name.get()
         except appscript.reference.CommandError:
@@ -69,6 +89,11 @@ class iTunesPlaylist(object):
 
     @property
     def path(self):
+        """Playlist path
+
+        Return relative path for this playlist
+
+        """
         path = [self.name]
         try:
             p = self.playlist.parent.get()
@@ -84,6 +109,11 @@ class iTunesPlaylist(object):
 
     @property
     def smart(self):
+        """Is this smart playlist
+
+        Return true if this is a smart playlist
+
+        """
         return self.playlist.smart.get() and True or False
 
     def __getattr__(self, attr):
@@ -119,6 +149,11 @@ class iTunesPlaylist(object):
             raise StopIteration
 
     def next(self):
+        """Iterate playlist
+
+        Iterate tracks on playlist
+
+        """
         try:
             if self.__next > len(self):
                 raise ValueError
@@ -131,11 +166,21 @@ class iTunesPlaylist(object):
         return track
 
     def jump(self, index):
+        """Jump to position
+
+        Jump to playlist position
+
+        """
         if index < 0 or index > len(self):
             raise ValueError
         self.__next = index + 1
 
     def add(self, files):
+        """Add files to playlist
+
+        Add provided files to the playlist
+
+        """
         entries = []
         if type(files) == list:
             entries = map(lambda x: mactypes.Alias(x), files)
@@ -145,6 +190,11 @@ class iTunesPlaylist(object):
         self.__update_len()
 
     def delete(self, entry):
+        """Delete entry from playlist
+
+        Delete provided track entry from playlist (via entry.track)
+
+        """
         self.itunes.delete(entry.track)
         if self.__next > 0:
             self.__next -= 1

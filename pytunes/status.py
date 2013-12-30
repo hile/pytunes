@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+"""Song status change
+
+Song change monitoring and XML reporting class
+
+"""
 
 import os
 import sys
@@ -55,6 +59,14 @@ IGNORE_TRACK_FIELDS = (
 )
 
 class iTunesStatus(object):
+    """Song status change monitoring
+
+    This class can monitor status of currently playing iTunes track
+    and return track change information with next() iterator, when
+    current track changes.
+
+    """
+
     def __init__(self, interval=1, xml_output=False, export_albumart=False):
         self.client = iTunes()
         self.interval = int(interval)
@@ -72,6 +84,12 @@ class iTunesStatus(object):
         return self
 
     def next(self):
+        """Return song info on song change
+
+        Iterate current object, sleeping self.interval time and returning
+        status and XML formatted track information when song is changed.
+
+        """
         while True:
             try:
                 n = self.client.current
@@ -93,6 +111,12 @@ class iTunesStatus(object):
             time.sleep(self.interval)
 
     def songinfo(self, track=None, xml_output=False, export_albumart=False):
+        """Current playing track info
+
+        Return current playing track information as XML or None if no
+        track was selected.
+
+        """
         if self.client.status in ['stopped', 'paused']:
             return None
 

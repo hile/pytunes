@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Very basic class to abstract access to itunes library from python.
+Simple abstraction to itunes library from python with appscript
 """
 
 import sys
@@ -24,6 +24,12 @@ ITUNES_MUSIC = os.path.join(ITUNES_DIR, 'iTunes Media', 'Music')
 ITUNES_PATH_FILE = os.path.join(ITUNES_DIR, 'library_path.txt')
 
 class iTunesMusicTree(Tree):
+    """iTunes music tree
+
+    iTunes music tree, representing one folder on disk configured as
+    iTunes library path.
+
+    """
     def __init__(self, itunes_path=None, codec='m4a', tree_path=ITUNES_PATH_FILE):
         self.itunes_path = itunes_path is not None and itunes_path or ITUNES_DIR
         if not os.path.isdir(self.itunes_path):
@@ -63,6 +69,11 @@ class iTunes(object):
 
     @property
     def itunes(self):
+        """iTunes appscript Instance
+
+        Returns instance of itunes appscript client
+
+        """
         return self.__instance__.itunes
 
     def __getattr__(self, attr):
@@ -72,6 +83,11 @@ class iTunes(object):
             raise AttributeError('No such iTunes attribute: %s' % attr)
 
     class Instance(object):
+        """iTunes appscript app
+
+        Singleton instance of iTunes appscript app
+
+        """
         def __init__(self):
             self.itunes = appscript.app('iTunes', terms=itunes_terminology)
 
@@ -84,6 +100,11 @@ class iTunes(object):
 
     @property
     def library(self):
+        """iTunes library
+
+        Return configured iTunes library
+
+        """
         for src in self.itunes.sources.get():
             if src.kind.get() == appscript.k.library:
                 return src
@@ -92,6 +113,12 @@ class iTunes(object):
 
     @property
     def status(self):
+        """iTunes play status
+
+        Returns current iTunes play status string from
+        ITUNES_PLAYER_STATE_NAMES
+
+        """
         s = self.itunes.player_state.get()
         try:
             return ITUNES_PLAYER_STATE_NAMES[s]
@@ -101,6 +128,11 @@ class iTunes(object):
 
     @property
     def current_track(self):
+        """Current track
+
+        Returns currently selected iTunes track or None
+
+        """
         try:
             return Track(self.itunes.current_track())
 
@@ -170,7 +202,9 @@ class iTunes(object):
         return self.next_track()
 
 class Track(object):
-    """Track in itunes library
+    """Track accessor
+
+    Track in itunes library
 
     """
 

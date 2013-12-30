@@ -1,3 +1,6 @@
+"""
+Python wrapper for iTunes using appscript APIs
+"""
 
 import sys
 

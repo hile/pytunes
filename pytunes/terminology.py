@@ -1,3 +1,7 @@
+"""
+iTunes appscript terminology from osascript
+"""
+
 version = 1.1
 path = '/Applications/iTunes.app'
 
