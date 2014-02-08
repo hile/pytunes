@@ -8,7 +8,7 @@ if sys.platform != 'darwin':
     print 'ERROR: this module uses applescript and only works in OS/X'
     sys.exit(1)
 
-VERSION='3.0.0'
+VERSION='3.1'
 setup(
     name = 'pytunes',
     version = VERSION,
@@ -16,10 +16,10 @@ setup(
     scripts = glob.glob('bin/*'),
     packages = ('pytunes',),
     install_requires = (
+        'soundforest>=3.1',
         'appscript',
         'configobj',
         'darwinist',
-        'soundforest',
     ),
     author = 'Ilkka Tuohela',
     author_email = 'hile@iki.fi',

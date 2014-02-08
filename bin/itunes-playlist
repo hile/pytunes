@@ -5,7 +5,7 @@ import fnmatch
 import shutil
 
 from soundforest import normalized
-from soundforest.cli import Script, ScriptError
+from soundforest.cli import Script, ScriptCommand, ScriptError
 from soundforest.playlist import m3uPlaylist, m3uPlaylistDirectory, PlaylistError
 
 from pytunes import iTunesError
@@ -13,183 +13,210 @@ from pytunes.playlist import iTunesPlaylist, AlliTunesPlaylists
 
 DEFAULT_DIRECTORY = os.path.expanduser('~/Music/Playlists')
 
-script = Script('itunes-playlist','Import and export itunes playlists', subcommands=False)
-script.add_argument('-l','--list', action='store_true', help='List playlists')
-script.add_argument('-f','--format', help='List or filename formatting string')
-script.add_argument('-y','--yearly', action='store_true', help='Order exported tracks by year')
-script.add_argument('-x','--export-files', action='store_true', help='Export files for decks')
-script.add_argument('-e','--export', action='store_true', help='Export playlists')
-script.add_argument('-i','--import',dest='import_pl', action='store_true', help='Import playlists')
-script.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
-script.add_argument('-E','--ignore-empty', action='store_true', help='Ignore empty playlists')
-script.add_argument('-D','--directory', default=DEFAULT_DIRECTORY, help='Playlist directory for m3u files')
-script.add_argument('playlists', nargs='*', help='Playlists to process')
-args = script.parse_args()
 
-if args.playlists:
-    playlists = []
-    for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
-        path = playlist.path
-        for match in args.playlists:
-            if fnmatch.fnmatch(playlist.path,path):
-                playlists.append(playlist)
+class PlaylistProcessorCommand(ScriptCommand):
+    def setup(self, args):
+        if args.playlists:
 
-else:
-    playlists = AlliTunesPlaylists(include_smart_playlists=args.smart_playlists)
-
-if args.export:
-    if not os.path.isdir(args.directory):
-        os.makedirs(args.directory)
-
-    for playlist in playlists:
-
-        try:
-            folder = os.path.dirname(os.path.join(args.directory,playlist.path))
-        except AttributeError:
-            folder = None
-
-        m3u = m3uPlaylist(playlist.name,folder=folder)
-        for track in playlist:
-            m3u.append(track.path)
-
-        if args.ignore_empty and len(m3u)==0:
-            script.log.debug('Ignore empty playlist: %s' % m3u)
-            continue
-
-        try:
-            m3u.write()
-        except PlaylistError,e:
-            script.log.info('Error writing playlist %s: %s' % (m3u.path,e))
-            continue
-
-        script.log.info('Exported: %s %d songs' % (m3u.path,len(m3u)))
-
-elif args.import_pl:
-    if not os.path.isdir(args.directory):
-        script.exit(1,'No such directory: %s' % args.directory)
-
-    for playlist in m3uPlaylistDirectory(path=args.directory):
-        playlist.read()
-        ipl = iTunesPlaylist(playlist.name)
-
-        for track  in playlist:
-            ipl.add(track)
-
-        script.log.info('Imported: %s %d songs' % (playlist.path,len(playlist)))
-
-elif args.export_files:
-    for playlist in playlists:
-        script.log.debug('Processing: %s' % playlist)
-
-        path = os.path.join(args.directory, playlist.path)
-
-        if not os.path.isdir(path):
-            try:
-                os.makedirs(path)
-            except OSError,(ecode,emsg):
-                script.exit(1, 'Error creating playlist folder %s: %s' % (path, emsg))
-
-        tracks = []
-        if args.yearly:
-            years = {}
-            for track in playlist:
-                if track.year not in years:
-                    years[track.year] = []
-                years[track.year].append(track)
-
-            for year in sorted(years.keys()):
-                years[year].sort(lambda x,y: cmp(x.artist,y.artist))
-
-                first = True
-                for track in years[year]:
-                    name = '%s - %s.%s' % (track.artist, track.name, track.extension)
-                    filename = os.path.join('%s'% year,name.replace(os.sep,''))
-                    tracks.append( (filename, track) )
-
-        elif args.format:
-            index = 1
-            for track in playlist:
-                try:
-                    name = '%s' % args.format % track
-                    filename = '%03d %s.%s' % (
-                        index,
-                        os.path.join(path, name.replace(os.sep,'')),
-                        track.extension
-                    )
-                    tracks.append( (filename, track) )
-                except KeyError,emsg:
-                    script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
-                index += 1
+            self.playlists = []
+            for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+                path = playlist.path
+                for match in args.playlists:
+                    if fnmatch.fnmatch(playlist.path,path):
+                        self.playlists.append(playlist)
+                return
 
         else:
-            index = 1
-            for track in playlist:
-                filename = '%03d %s' % (index, track.path)
-                tracks.append( (filename, track) )
+            self.playlists = AlliTunesPlaylists(include_smart_playlists=args.smart_playlists)
 
-        for filename,original in tracks:
-            filename = os.path.join(path, filename)
-            script.log.debug('Processing %s' % filename)
-            if os.path.isfile(filename):
-                continue
 
-            file_dir = os.path.dirname(filename)
-            if not os.path.isdir(file_dir):
-                try:
-                    os.makedirs(file_dir)
-                except OSError,(ecode,emsg):
-                    script.exit(1, 'Error creating directory %s: %s' % (filename, emsg) )
+class ListCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        PlaylistProcessorCommand.setup(self, args)
 
-            try:
-                script.message('Writing %s' % filename)
-                shutil.copyfile(original.path, filename)
-            except OSError,(ecode,emsg):
-                script.exit(1, 'Error writing file %s: %s' % (filename, emsg) )
+        if not args.playlists:
+            for playlist in self.playlists:
+                self.script.message(playlist.path)
 
-elif args.list:
-    if not args.playlists:
-        for playlist in playlists:
-            script.message(playlist.path)
+        else:
+            for playlist in self.playlists:
 
-    else:
-        for playlist in playlists:
+                years = {}
+                for track in playlist:
+                    if args.yearly:
+                        if track.year not in years:
+                            years[track.year] = []
 
-            years = {}
-            for track in playlist:
+                        years[track.year].append(track)
+
+                    elif args.format:
+                        try:
+                            self.script.message(args.format % track)
+                        except KeyError,emsg:
+                            self.script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+
+                    else:
+                        self.script.message(track)
+
                 if args.yearly:
+                    for year in sorted(years.keys()):
+                        years[year].sort(lambda x,y: cmp(x.artist,y.artist))
+
+                        first = True
+                        for track in years[year]:
+
+                            if args.format:
+                                try:
+                                    self.script.message(args.format % track)
+                                except KeyError,emsg:
+                                    self.script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+
+                            elif first:
+                                self.script.message('%(year)4s\t%(artist)s\t%(name)s' % track)
+                                first = False
+                            else:
+                                self.script.message('\t%(artist)s\t%(name)s' % track)
+
+
+class ExportFilesCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        PlaylistProcessorCommand.setup(self, args)
+
+        for playlist in self.playlists:
+            self.script.log.debug('Processing: %s' % playlist)
+
+            path = os.path.join(args.directory, playlist.path)
+
+            if not os.path.isdir(path):
+                try:
+                    os.makedirs(path)
+                except OSError,(ecode,emsg):
+                    self.script.exit(1, 'Error creating playlist folder %s: %s' % (path, emsg))
+
+            tracks = []
+            if args.yearly:
+                years = {}
+                for track in playlist:
                     if track.year not in years:
                         years[track.year] = []
-
                     years[track.year].append(track)
 
-                elif args.format:
-                    try:
-                        script.message(args.format % track)
-                    except KeyError,emsg:
-                        script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
-
-                else:
-                    script.message(track)
-
-            if args.yearly:
                 for year in sorted(years.keys()):
                     years[year].sort(lambda x,y: cmp(x.artist,y.artist))
 
                     first = True
                     for track in years[year]:
+                        name = '%s - %s.%s' % (track.artist, track.name, track.extension)
+                        filename = os.path.join('%s'% year,name.replace(os.sep,''))
+                        tracks.append( (filename, track) )
 
-                        if args.format:
-                            try:
-                                script.message(args.format % track)
-                            except KeyError,emsg:
-                                script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+            elif args.format:
+                index = 1
+                for track in playlist:
+                    try:
+                        name = '%s' % args.format % track
+                        filename = '%03d %s.%s' % (
+                            index,
+                            os.path.join(path, name.replace(os.sep,'')),
+                            track.extension
+                        )
+                        tracks.append( (filename, track) )
+                    except KeyError,emsg:
+                        self.script.exit(1,'Error formatting track %s: %s' % (track.path, emsg))
+                    index += 1
 
-                        elif first:
-                            script.message('%(year)4s\t%(artist)s\t%(name)s' % track)
-                            first = False
-                        else:
-                            script.message('\t%(artist)s\t%(name)s' % track)
+            else:
+                index = 1
+                for track in playlist:
+                    filename = '%03d %s' % (index, track.path)
+                    tracks.append( (filename, track) )
 
-else:
-    script.exit(1,'No operation selected')
+            for filename,original in tracks:
+                filename = os.path.join(path, filename)
+                self.script.log.debug('Processing %s' % filename)
+                if os.path.isfile(filename):
+                    continue
+
+                file_dir = os.path.dirname(filename)
+                if not os.path.isdir(file_dir):
+                    try:
+                        os.makedirs(file_dir)
+                    except OSError,(ecode,emsg):
+                        self.script.exit(1, 'Error creating directory %s: %s' % (filename, emsg) )
+
+                try:
+                    self.script.message('Writing %s' % filename)
+                    shutil.copyfile(original.path, filename)
+                except OSError,(ecode,emsg):
+                    self.script.exit(1, 'Error writing file %s: %s' % (filename, emsg) )
+
+
+class ExportCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        PlaylistProcessorCommand.setup(self, args)
+        if not os.path.isdir(args.directory):
+            os.makedirs(args.directory)
+
+        for playlist in self.playlists:
+
+            try:
+                folder = os.path.dirname(os.path.join(args.directory,playlist.path))
+            except AttributeError:
+                folder = None
+
+            m3u = m3uPlaylist(playlist.name,folder=folder)
+            for track in playlist:
+                m3u.append(track.path)
+
+            if args.ignore_empty and len(m3u)==0:
+                self.script.log.debug('Ignore empty playlist: %s' % m3u)
+                continue
+
+            try:
+                m3u.write()
+            except PlaylistError,e:
+                self.script.log.info('Error writing playlist %s: %s' % (m3u.path,e))
+                continue
+
+            self.script.log.info('Exported: %s %d songs' % (m3u.path,len(m3u)))
+
+
+class ImportCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        PlaylistProcessorCommand.setup(self, args)
+
+        if not os.path.isdir(args.directory):
+            self.script.exit(1,'No such directory: %s' % args.directory)
+
+        for playlist in m3uPlaylistDirectory(path=args.directory):
+            playlist.read()
+            ipl = iTunesPlaylist(playlist.name)
+
+            for track  in playlist:
+                ipl.add(track)
+
+            self.script.log.info('Imported: %s %d songs' % (playlist.path,len(playlist)))
+
+script = Script('itunes-playlist','Import and export itunes playlists')
+script.add_argument('-D','--directory', default=DEFAULT_DIRECTORY, help='Playlist directory for m3u files')
+script.add_argument('playlists', nargs='*', help='Playlists to process')
+
+c = script.add_subcommand(ListCommand('list', 'List playlists'))
+c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+c.add_argument('-y','--yearly', action='store_true', help='Order listed tracks by year')
+c.add_argument('-f','--format', help='List formatting string')
+
+c = script.add_subcommand(ExportFilesCommand('export-files', 'Export playlists as files'))
+c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+c.add_argument('-y','--yearly', action='store_true', help='Order exported tracks by year')
+c.add_argument('-f','--format', help='Filename formatting string')
+
+c = script.add_subcommand(ExportCommand('export', 'Export playlists'))
+c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+c.add_argument('-E','--ignore-empty', action='store_true', help='Ignore empty playlists')
+
+c = script.add_subcommand(ImportCommand('import', 'Import playlists'))
+c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+
+script.run()
 

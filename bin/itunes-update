@@ -15,7 +15,7 @@ from pytunes.playlist import iTunesPlaylist
 # How often we report something
 PROGRESS_INTERVAL = 1000
 
-script = Script('itunes-update', 'Update itunes library', subcommands=False)
+script = Script('itunes-update', 'Update itunes library')
 script.add_argument('-i', '--itunes-directory', help='iTunes directory')
 script.add_argument('-c', '--codec', help='Music library default codec')
 script.add_argument('-l', '--music-path', help='Music library path')

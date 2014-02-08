@@ -17,7 +17,7 @@ COMMAND_CHOICES = (
     'volume'
 )
 
-script = Script(subcommands=False)
+script = Script()
 script.add_argument('command', choices=COMMAND_CHOICES, help='Command to execute')
 script.add_argument('value', nargs='?' , help='Volume value (0-100)')
 script.add_argument('-v', '--verbose', action='store_true', help='Verbose messages')
