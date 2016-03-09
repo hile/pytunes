@@ -1,11 +1,12 @@
 
-# OS/X appscript itunes control wrapper for python #
+iTunes command line and python API
+==================================
 
-This module implements a wrapper for itunes appscript control, with
-notifications and CLI updates to library and playlists.
+This module implements a wrapper for itunes appscript control and allows updating
+library and playlists from command line.
 
-# Required modules #
+There used to be a notification agent with itunesd but this has now been removed, as
+itunes has it's own notifications.
 
-This module requires my other modules 'musa' and 'darwinist'. It uses 
-apple script bridge and only works on OS/X.
+This module uses apple script bridge and only works on OS X. No windows support is planned.
 

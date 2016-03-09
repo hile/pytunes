@@ -1,21 +1,15 @@
 
-import sys
 import glob
 from setuptools import setup, find_packages
-
-if sys.platform != 'darwin':
-    print 'ERROR: this module uses applescript and only works in OS/X'
-    sys.exit(1)
-
-VERSION='3.2'
+from pytunes import __version__
 
 setup(
     name = 'pytunes',
-    version = VERSION,
     author = 'Ilkka Tuohela',
     author_email = 'hile@iki.fi',
+    version = __version__,
     keywords = 'iTunes control management playlist export',
-    description = 'Module for itunes library management and remote control',
+    description = 'iTunes CLI control and python API',
     url = 'https://github.com/hile/pytunes',
     license = 'PSF',
     scripts = glob.glob('bin/*'),

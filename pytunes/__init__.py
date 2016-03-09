@@ -2,9 +2,7 @@
 Python wrapper for iTunes using appscript APIs
 """
 
-import sys
-
-__all__ = ( 'client', 'constants', 'itc', 'playlist', 'status', 'terminology' )
+__version__ = '12.3'
 
 class iTunesError(Exception):
     pass
