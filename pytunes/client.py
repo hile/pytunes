@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Simple abstraction to itunes library from python with appscript
 """
@@ -23,6 +22,7 @@ ITUNES_DIR = os.path.join(os.getenv('HOME'), 'Music', 'iTunes')
 ITUNES_MUSIC = os.path.join(ITUNES_DIR, 'iTunes Media', 'Music')
 ITUNES_PATH_FILE = os.path.join(ITUNES_DIR, 'library_path.txt')
 
+
 class iTunesMusicTree(Tree):
     """iTunes music tree
 
@@ -33,26 +33,27 @@ class iTunesMusicTree(Tree):
     def __init__(self, itunes_path=None, codec='m4a', tree_path=ITUNES_PATH_FILE):
         self.itunes_path = itunes_path is not None and itunes_path or ITUNES_DIR
         if not os.path.isdir(self.itunes_path):
-            raise iTunesError('No such directory: %s' % self.itunes_path)
+            raise iTunesError('No such directory: {0}'.format(self.itunes_path))
 
         if tree_path is None:
             if os.path.isfile(ITUNES_PATH_FILE):
               try:
                   tree_path = open(ITUNES_PATH_FILE, 'r').read().strip()
 
-              except IOError, (ecode, emsg):
-                  raise iTunesError('Error opening %s: %s' % (tree_path, emsg))
+              except IOError as e:
+                  raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
 
-              except OSError, (ecode, emsg):
-                  raise iTunesError('Error opening %s: %s' % (tree_path, emsg))
+              except OSError as e:
+                  raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
 
             else:
                 tree_path = ITUNES_MUSIC
 
         if not os.path.isdir(tree_path):
-                raise iTunesError('No such directory: %s' % tree_path)
+                raise iTunesError('No such directory: {0}'.format(tree_path))
 
         Tree.__init__(self, path=tree_path)
+
 
 class iTunes(object):
     """iTunes application
@@ -80,7 +81,7 @@ class iTunes(object):
         try:
             return getattr(self.__instance__, attr)
         except AttributeError:
-            raise AttributeError('No such iTunes attribute: %s' % attr)
+            raise AttributeError('No such iTunes attribute: {0}'.format(attr))
 
     class Instance(object):
         """iTunes appscript app
@@ -96,7 +97,7 @@ class iTunes(object):
                 return getattr(self.itunes, attr)
 
             except AttributeError:
-                raise AttributeError('No such iTunes attribute: %s' % attr)
+                raise AttributeError('No such iTunes attribute: {0}'.format(attr))
 
     @property
     def library(self):
@@ -124,7 +125,7 @@ class iTunes(object):
             return ITUNES_PLAYER_STATE_NAMES[s]
 
         except KeyError:
-            return 'Unknown (%s' % (s)
+            return 'Unknown ({0}'.format(s)
 
     @property
     def current_track(self):
@@ -156,7 +157,7 @@ class iTunes(object):
             self.itunes.current_playlist.song_repeat.set(to=REPEAT_VALUES[value])
 
         except KeyError:
-            raise iTunesError('Invalid repeat value %s' % value)
+            raise iTunesError('Invalid repeat value {0}'.format(value))
 
     @property
     def shuffle(self):
@@ -201,6 +202,7 @@ class iTunes(object):
         """
         return self.next_track()
 
+
 class Track(object):
     """Track accessor
 
@@ -218,14 +220,14 @@ class Track(object):
             self.path = None
 
     def __repr__(self):
-        return '%s - %s - %s' % (self.artist, self.album, self.title)
+        return '{0} - {1} - {2}'.format(self.artist, self.album, self.title)
 
     def __getattr__(self, attr):
         try:
             return self[attr]
         except KeyError:
             pass
-        raise AttributeError('Invalid Track attribute: %s' % attr)
+        raise AttributeError('Invalid Track attribute: {0}'.format(attr))
 
     def __getitem__(self, item):
         if item == 'path':
@@ -261,7 +263,7 @@ class Track(object):
         except AttributeError:
             pass
 
-        raise KeyError('Invalid Track item: %s' % item)
+        raise KeyError('Invalid Track item: {0}'.format(item))
 
     def __setattr__(self, item, value):
         if item in ('date', 'year'):
@@ -271,7 +273,7 @@ class Track(object):
                     value = int(value.split('-')[0])
 
                 except ValueError:
-                    raise AttributeError('tag %s invalid value: %s' % (item, value))
+                    raise AttributeError('tag {0} invalid value: {1}'.format(item, value))
 
                 except IndexError:
                     value = int(value)
@@ -280,17 +282,17 @@ class Track(object):
             try:
                 entry = self.track.__getattr__(item)
                 self.itunes.set(entry, to=value)
-            except appscript.reference.CommandError, emsg:
-                raise ValueError('ERROR setting %s to %s: %s' % (item, value, emsg))
+            except appscript.reference.CommandError as e:
+                raise ValueError('ERROR setting {0} to {1}: {2}'.format(item, value, e))
 
         elif item in TRACK_SYS_FIELDS:
-            raise ValueError('Track attribute %s is read-only' % item)
+            raise ValueError('Track attribute {0} is read-only'.format(item))
 
         elif item in ['itunes', 'track', 'path', 'log']:
             self.__dict__[item] = value
 
         else:
-            raise AttributeError('Invalid Track attribute: %s' % item)
+            raise AttributeError('Invalid Track attribute: {0}'.format(item))
 
     def updateTracknumber(self):
         m = re.match('^([0-9]+) .*', os.path.basename(self.path))
@@ -331,7 +333,7 @@ class Track(object):
             if current_value == value:
                 return
 
-        except AttributeError, e:
+        except AttributeError:
             pass
 
         if value in ('', None,):
@@ -360,8 +362,8 @@ class Track(object):
                 self.updateTag(tag, value)
                 modified = True
 
-        except TagError, emsg:
-            raise iTunesError('Error updating tags: %s %s' % (self.path, emsg))
+        except TagError as e:
+            raise iTunesError('Error updating tags: {0} {1}'.format(self.path, e))
 
         if self.updateTracknumber():
             modified = True

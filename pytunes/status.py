@@ -170,16 +170,15 @@ class iTunesStatus(object):
             try:
                 if isinstance(v, int):
                     if v==0: continue
-                    xml.append(E(k, '%d'%v))
+                    xml.append(E(k, '{0:d}'.format(v)))
                 elif isinstance(v, float):
                     if v==0: continue
-                    xml.append(E(k, '%.2f'%v))
+                    xml.append(E(k, '{0:3.2f}'.format(v)))
                 elif v!='':
                     xml.append(E(k, v))
 
-            except ValueError, emsg:
-                print emsg
-                print 'ERROR encoding key %s type %s: %s' % (k, type(v), v)
+            except ValueError:
+                print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
 
         for k in sorted(track.keys()):
             v = track[k]
@@ -190,23 +189,21 @@ class iTunesStatus(object):
                 if isinstance(v, int):
                     if v==0:
                         continue
-                    xml.append(E(k, '%d'%v))
+                    xml.append(E(k, '{0:d}'.format(v)))
                 elif isinstance(v, float):
                     if v==0:
                         continue
-                    xml.append(E(k, '%.2f'%v))
+                    xml.append(E(k, '{0:3.2f}'.format(v)))
                 else:
                     if v=='':
                         continue
                     xml.append(E(k, v))
 
-            except TypeError, emsg:
-                print emsg
-                print 'ERROR encoding key %s type %s: %s' % (k, type(v), v)
+            except TypeError:
+                print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
 
-            except ValueError, emsg:
-                print emsg
-                print 'ERROR encoding key %s type %s: %s' % (k, type(v), v)
+            except ValueError:
+                print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
 
         if (self.export_albumart or export_albumart) and albumart:
             xml.append(E('albumart',

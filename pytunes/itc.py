@@ -10,7 +10,6 @@ class ITCArtworkFile(object):
     """ITC Albumart
 
     ITC Albumart file parser
-
     """
     def __init__(self, path):
         self.path = path
@@ -30,10 +29,10 @@ class ITCArtworkFile(object):
         self.image = parser.close()
 
     def __str__(self):
-        return '%s track %s %s' % (
+        return '{0} track {1} {2}'.format(
             self.itc_type,
             self.track_id,
-            self.image.format.lower()
+            self.image.format.lower(),
         )
 
     def write(self, outputdir, filename=None):
@@ -44,9 +43,9 @@ class ITCArtworkFile(object):
         """
         if not filename:
             filename = os.path.join(
-                outputdir, '%s.%s' % (
+                outputdir, '{0}.{1}'.format(
                     self.track_id,
-                    self.image.format.lower()
+                    self.image.format.lower(),
                 )
             )
 

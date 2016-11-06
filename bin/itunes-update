@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+Update itunes library against a music tree from command line
+
+This command expects trees to be configured to soundforest databases.
+"""
 
 import os
 import time
@@ -30,18 +35,18 @@ if args.position:
         library.jump(args.position)
     except ValueError:
         script.exit(1,
-            'Invalid position: %s (%d entries)' % (args.position, len(library))
+            'Invalid position: {0} ({1:d} entries)'.format((args.position, len(library)))
         )
 try:
     tree = iTunesMusicTree(itunes_path=args.itunes_directory, tree_path=args.music_path)
     tree.load()
     tree_paths = tree.realpaths
 
-except iTunesError, emsg:
-    script.exit(1, emsg)
+except iTunesError as e:
+    script.exit(1, e)
 
-except SoundforestError, emsg:
-    script.exit(1, emsg)
+except SoundforestError as e:
+    script.exit(1, e)
 
 processed = 0
 progress_interval = PROGRESS_INTERVAL
@@ -52,10 +57,10 @@ script.log.info('Checking library files against itunes')
 
 for entry in library:
     processed += 1
-    if processed%progress_interval==0:
+    if processed % progress_interval == 0:
         progress_time = float(time.time()-progress_start)
         progress_rate = float(progress_interval/progress_time)
-        script.log.info('Index %d (%d entries per second)' % (processed, progress_rate))
+        script.log.info('Index {0:d} ({1:d} entries per second)'.format(processed, progress_rate))
         progress_start = time.time()
 
     try:
@@ -68,11 +73,11 @@ for entry in library:
 
     if not tree_paths.has_key(path):
         if not os.path.isfile(path):
-            script.log.info('Removing non-existing: "%s"' % path)
+            script.log.info('Removing non-existing: "}0}"'.format(path))
             library.delete(entry)
 
         else:
-            script.log.info('File outside tree: %s' % path)
+            script.log.info('File outside tree: {0}'.format(path))
 
     elif not itunes_files.has_key(path):
         itunes_files[path] = entry
@@ -86,11 +91,11 @@ for entry in library:
                 library.__next = entry.index
 
     else:
-        script.log.info('Removing duplicate: %s' % entry.path)
+        script.log.info('Removing duplicate: {0}'.format(entry.path))
         library.delete(entry)
 
 loadtime = float(time.time()-start)
-script.log.info('Checked %d files in %0.2f seconds' % (processed, loadtime))
+script.log.info('Checked {0:d} files in {1:4.2f} seconds'.format(processed, loadtime))
 
 start = time.time()
 processed = 0
@@ -101,16 +106,16 @@ if args.position is None:
     for path in sorted(tree_paths.keys()):
 
         if not itunes_files.has_key(path):
-            script.log.info('Adding: %s' % path)
+            script.log.info('Adding: {0}'.format(path))
             try:
                 library.add(path)
-            except ValueError, e:
-                print e
+            except ValueError as e:
+                print(e)
 
         processed += 1
-        if processed%1000 == 0:
-            script.log.debug('Processed: %d entries' % processed)
+        if processed % 1000 == 0:
+            script.log.debug('Processed: {0:d} entries'.format(processed))
 
 loadtime = float(time.time()-start)
-script.log.info('Checked %d files in %0.2f seconds' % (processed, loadtime))
+script.log.info('Checked {0:d} files in {1:2.2f} seconds'.format(processed, loadtime))
 
