@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+"""
+Example script to view and control itunes playback status
+"""
+
+from soundforest.cli import Script, ScriptError
+
+from pytunes import iTunesError
+from pytunes.client import iTunes
+
+COMMAND_CHOICES = (
+    'play',
+    'stop',
+    'next',
+    'previous',
+    'info',
+    'volume'
+)
+
+script = Script()
+script.add_argument('-v', '--verbose', action='store_true', help='Verbose messages')
+script.add_argument('command', nargs='?', default='info', choices=COMMAND_CHOICES, help='Command to execute')
+script.add_argument('value', nargs='?', help='Volume value (0-100)')
+args = script.parse_args()
+
+itunes = iTunes()
+
+if args.command == 'volume':
+    if args.value is None:
+        script.message('volume {0:d} %%'.format(itunes.volume))
+
+    else:
+        try:
+            if args.value[:1] == '+':
+                args.value = itunes.volume + int(args.value[1:])
+                if args.value > 100:
+                    args.value = 100
+
+            elif args.value[:1] == '-':
+                args.value = itunes.volume - int(args.value[1:])
+                if args.value < 0:
+                    args.value = 0
+
+            else:
+                args.value = int(args.value)
+
+        except ValueError:
+            script.exit(1, 'Invalid volume value {0}'.format(args.value))
+
+        try:
+            itunes.volume = args.value
+        except iTunesError as e:
+            script.exit(1,e)
+
+if args.command == 'previous':
+    itunes.previous()
+
+if args.command == 'next':
+    itunes.next()
+
+if args.command == 'play':
+
+    if itunes.status == 'playing':
+        script.log.info('Stopping iTunes playback')
+        itunes.pause()
+
+    else:
+        script.log.info('Starting iTunes playback')
+        itunes.play()
+
+if args.command == 'stop':
+
+    if itunes.status in ('playing', 'paused',):
+        script.log.info('Stopping iTunes playback')
+        itunes.stop()
+
+    else:
+        script.log.info('iTunes was already stopped')
+
+if args.command == 'info':
+
+    if itunes.current_track:
+        if args.verbose:
+            script.message(itunes.current_track.path)
+
+        script.message("""Artist:  %(artist)s
+Album:   %(album)s
+Title:   %(title)s
+Genre:   %(genre)s
+Year:    %(year)s""" % (itunes.current_track)
+        )
+
+    else:
+        script.message('No song playing')
