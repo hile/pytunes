@@ -16,6 +16,7 @@ setup(
     packages = find_packages(),
     install_requires = (
         'soundforest>=4.1.0',
+        'systematic>=4.4.8',
         'appscript',
         'configobj',
         'darwinist',

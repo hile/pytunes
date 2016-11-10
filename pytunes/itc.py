@@ -13,17 +13,19 @@ class ITCArtworkFile(object):
     """
     def __init__(self, path):
         self.path = path
-        (self.library_id, self.track_id) = \
-            os.path.splitext(os.path.basename(path))[0].split('-')
+
+        self.library_id, self.track_id = os.path.splitext(
+            os.path.basename(path)
+        )[0].split('-')
 
         data = open(self.path, 'r').read()
 
         hdr_len = unpack('>i', data[0:4])[0]
         hdr_id  = data[0:8]
-        data_len = unpack('>i', data[hdr_len:hdr_len+4])[0]
+        data_len = unpack('>i', data[hdr_len:hdr_len + 4])[0]
 
-        self.itc_type = data[hdr_len+44:hdr_len+48]
-        imagedata = data[hdr_len+208:]
+        self.itc_type = data[hdr_len + 44:hdr_len + 48]
+        imagedata = data[hdr_len + 208:]
         parser = ImageFile.Parser()
         parser.feed(imagedata)
         self.image = parser.close()
@@ -39,7 +41,6 @@ class ITCArtworkFile(object):
         """Write ITC to file
 
         Write ITC image output file specified directory
-
         """
         if not filename:
             filename = os.path.join(

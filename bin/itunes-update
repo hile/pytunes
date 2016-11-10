@@ -118,4 +118,3 @@ if args.position is None:
 
 loadtime = float(time.time()-start)
 script.log.info('Checked {0:d} files in {1:2.2f} seconds'.format(processed, loadtime))
-

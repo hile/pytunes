@@ -14,7 +14,7 @@ COMMAND_CHOICES = (
     'next',
     'previous',
     'info',
-    'volume'
+    'volume',
 )
 
 script = Script()
@@ -23,7 +23,10 @@ script.add_argument('command', nargs='?', default='info', choices=COMMAND_CHOICE
 script.add_argument('value', nargs='?', help='Volume value (0-100)')
 args = script.parse_args()
 
-itunes = iTunes()
+try:
+    itunes = iTunes()
+except iTunesError as e:
+    script.exit(1, e)
 
 if args.command == 'volume':
     if args.value is None:

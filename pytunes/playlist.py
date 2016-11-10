@@ -1,7 +1,6 @@
 """iTunes playlists
 
 Mapping of iTunes playlists to soundforest playlists
-
 """
 
 import os
@@ -17,17 +16,17 @@ SKIP_PLAYLISTS = (
     'Music',
     'Movies',
     'TV Shows',
-    'Purchased'
+    'Purchased',
 )
 
 def AlliTunesPlaylists(client=None, skipDefaultLists=True, include_smart_playlists=False):
     """All iTunes playlists
 
     Return all iTunes playlists as iTunesPlaylist objects
-
     """
     client = client is not None and client or iTunes()
     playlists = []
+
     for pl in client.user_playlists.get():
         name = pl.name.get()
         if skipDefaultLists and name in SKIP_PLAYLISTS:
@@ -35,7 +34,9 @@ def AlliTunesPlaylists(client=None, skipDefaultLists=True, include_smart_playlis
         if pl.smart.get() and not include_smart_playlists:
             continue
         playlists.append(iTunesPlaylist(name, client))
+
     return playlists
+
 
 class iTunesPlaylist(object):
     """iTunes playlist
@@ -47,16 +48,20 @@ class iTunesPlaylist(object):
     def __init__(self, name='library', app=None):
         self.itunes = app is not None and app or iTunes()
         self.__next = 0
+
         try:
             if name == 'library':
                 self.playlist = self.itunes.get(self.itunes.library_playlists[name])
             else:
                 self.playlist = self.itunes.get(self.itunes.user_playlists[name])
+
         except appscript.reference.CommandError:
             self.playlist = self.itunes.make(
-                new=appscript.k.user_playlist,  at='Playlists',
+                new=appscript.k.user_playlist,
+                at='Playlists',
                 with_properties={appscript.k.name: name},
             )
+
         self.name = name
         self.__update_len()
 
@@ -67,7 +72,7 @@ class iTunesPlaylist(object):
             self.__len_cached = 0
 
     def __repr__(self):
-        return 'playlist:%s' % self.name
+        return 'playlist:{0}'.format(self.name)
 
     def __len__(self):
         return self.__len_cached
@@ -127,7 +132,7 @@ class iTunesPlaylist(object):
         except appscript.reference.CommandError:
             pass
 
-        raise AttributeError('No such iTunesPlaylist item: %s' % attr)
+        raise AttributeError('No such iTunesPlaylist item: {0}'.format(attr))
 
     def __getitem__(self, item):
         try:
@@ -136,11 +141,11 @@ class iTunesPlaylist(object):
 
         except ValueError:
             self.__update_len()
-            raise ValueError('Invalid playlist index: %s' % item)
+            raise ValueError('Invalid playlist index: {0}'.format(item))
 
         except appscript.reference.CommandError:
             self.__update_len()
-            raise ValueError('Out of playlist: %d' % item)
+            raise ValueError('Out of playlist: {0:d}'.format(item))
 
     def __iter__(self):
         try:
@@ -152,7 +157,6 @@ class iTunesPlaylist(object):
         """Iterate playlist
 
         Iterate tracks on playlist
-
         """
         try:
             if self.__next > len(self):
@@ -181,12 +185,9 @@ class iTunesPlaylist(object):
         Add provided files to the playlist
 
         """
-        entries = []
-        if type(files) == list:
-            entries = map(lambda x: mactypes.Alias(x), files)
-        else:
-            entries = [mactypes.Alias(files)]
-        self.itunes.add(entries, to=self.playlist)
+        if not isinstance(files, list):
+            files = [files]
+        self.itunes.add([mactypes.Alias(entry) for entry in files], to=self.playlist)
         self.__update_len()
 
     def delete(self, entry):
