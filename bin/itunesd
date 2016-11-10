@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+"""
+Daemon process to log songs played by iTunes
+"""
+
+import os
+
+from soundforest.cli import Script, ScriptError
+from pytunes.status import iTunesStatus, iTunesError
+
+DEFAULT_LOGFILE = '~/.itunes.log'
+
+script = Script()
+script.add_argument('-f', '--log-file', default=DEFAULT_LOGFILE, help='Log file')
+args = script.parse_args()
+
+try:
+    monitor = iTunesStatus()
+except iTunesError as e:
+    script.exit(1, e)
+
+args.log_file = os.path.expandvars(os.path.expanduser(args.log_file))
+try:
+    with open(args.log_file, 'w') as f:
+        while True:
+            status, details = monitor.next()
+            if details:
+                f.write('{0} {1}\n'.format(
+                    details['started'],
+                    details['path'],
+                ))
+                f.flush()
+
+except OSError as e:
+    script.exit(1, 'Error writing to {0}: {1}'.format(args.log_file, e))
+except IOError as e:
+    script.exit(1, 'Error writing to {0}: {1}'.format(args.log_file, e))
