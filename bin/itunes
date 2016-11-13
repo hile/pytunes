@@ -3,7 +3,7 @@
 Example script to view and control itunes playback status
 """
 
-from soundforest.cli import Script, ScriptError
+from soundforest.cli import Script, ScriptCommand, ScriptError
 
 from pytunes import iTunesError
 from pytunes.client import iTunes
@@ -15,6 +15,8 @@ COMMAND_CHOICES = (
     'previous',
     'info',
     'volume',
+    'lookup',
+    'update-index',
 )
 
 script = Script()
@@ -62,8 +64,10 @@ if args.command == 'next':
     itunes.next()
 
 if args.command == 'play':
+    if args.value:
+        itunes.play(args.value)
 
-    if itunes.status == 'playing':
+    elif itunes.status == 'playing':
         script.log.info('Stopping iTunes playback')
         itunes.pause()
 
@@ -95,3 +99,16 @@ Year:    %(year)s""" % (itunes.current_track)
 
     else:
         script.message('No song playing')
+
+if args.command == 'update-index':
+    try:
+        script.message('Update: {0}'.format(itunes.indexdb))
+        itunes.indexdb.update()
+    except iTunesError as e:
+        script.error('Error updating {0}: {1}'.format(itunes.indexdb, e))
+
+if args.command == 'lookup':
+    try:
+        script.message(itunes.indexdb.lookup_index(args.value))
+    except iTunesError as e:
+        script.error(e)

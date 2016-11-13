@@ -106,9 +106,10 @@ class iTunesStatus(object):
                     else:
                         return (self.status, None)
 
-                if self.current is None or n.id != self.current.id:
-                    self.current = n
-                    return (self.client.status, self.songinfo(n))
+                if n is not None:
+                    if self.current is None or n.id != self.current.id:
+                        self.current = n
+                        return (self.client.status, self.songinfo(n))
 
             except iTunesError:
                 self.client = None

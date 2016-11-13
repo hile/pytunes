@@ -9,30 +9,37 @@ from soundforest.cli import Script, ScriptCommand, ScriptError
 from soundforest.playlist import m3uPlaylist, m3uPlaylistDirectory, PlaylistError
 
 from pytunes import iTunesError
-from pytunes.playlist import iTunesPlaylist, AlliTunesPlaylists
+from pytunes.client import iTunes, iTunesError
 
 DEFAULT_DIRECTORY = os.path.expanduser('~/Music/Playlists')
 
 
 class PlaylistProcessorCommand(ScriptCommand):
     def setup(self, args):
-        if args.playlists:
+        self.client = iTunes()
+        self.playlists = []
 
-            self.playlists = []
-            for playlist in AlliTunesPlaylists(include_smart_playlists=args.smart_playlists):
+        if 'playlists' in args and args.playlists:
+            for playlist in self.client.playlists:
                 path = playlist.path
                 for match in args.playlists:
                     if fnmatch.fnmatch(playlist.path,path):
                         self.playlists.append(playlist)
-                return
-
+            if 'smart_playlists' in args and args.smart_playlists:
+                for playlist in self.client.smart_playlists:
+                    path = playlist.path
+                    for match in args.playlists:
+                        if fnmatch.fnmatch(playlist.path,path):
+                            self.playlists.append(playlist)
         else:
-            self.playlists = AlliTunesPlaylists(include_smart_playlists=args.smart_playlists)
+            self.playlists.extend(self.client.playlists)
+            if 'smart_playlists' in args and args.smart_playlists:
+                self.playlists.extend(self.client.smart_playlists)
 
 
 class ListCommand(PlaylistProcessorCommand):
     def run(self, args):
-        PlaylistProcessorCommand.setup(self, args)
+        super(ListCommand, self).setup(args)
 
         if not args.playlists:
             for playlist in self.playlists:
@@ -80,7 +87,7 @@ class ListCommand(PlaylistProcessorCommand):
 
 class ExportFilesCommand(PlaylistProcessorCommand):
     def run(self, args):
-        PlaylistProcessorCommand.setup(self, args)
+        super(ExportFilesCommand, self).setup(args)
 
         for playlist in self.playlists:
             self.script.log.debug('Processing: {0}'.format(playlist))
@@ -153,9 +160,15 @@ class ExportFilesCommand(PlaylistProcessorCommand):
 
 class ExportCommand(PlaylistProcessorCommand):
     def run(self, args):
-        PlaylistProcessorCommand.setup(self, args)
+        super(ExportCommand, self).setup(args)
+
         if not os.path.isdir(args.directory):
-            os.makedirs(args.directory)
+            try:
+                os.makedirs(args.directory)
+            except OSError as e:
+                self.exit(1, 'Error creating directory {0}: {1}'.format(args.directory, e))
+            except IOError as e:
+                self.exit(1, 'Error creating directory {0}: {1}'.format(args.directory, e))
 
         for playlist in self.playlists:
 
@@ -183,7 +196,7 @@ class ExportCommand(PlaylistProcessorCommand):
 
 class ImportCommand(PlaylistProcessorCommand):
     def run(self, args):
-        PlaylistProcessorCommand.setup(self, args)
+        super(ImportCommand, self).setup(args)
 
         if not os.path.isdir(args.directory):
             self.script.exit(1,'No such directory: {0}'.format(args.directory))
@@ -198,26 +211,54 @@ class ImportCommand(PlaylistProcessorCommand):
             self.script.log.info('Imported: {0} {1} songs'.format(playlist.path, len(playlist)))
 
 
+class CreateCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        super(CreateCommand, self).setup(args)
+
+        for name in args.names:
+            self.client.create_playlist(name)
+
+
+class RemoveCommand(PlaylistProcessorCommand):
+    def run(self, args):
+        super(RemoveCommand, self).setup(args)
+
+        for name in args.names:
+            try:
+                self.client.delete_playlist(name)
+            except iTunesError as e:
+                self.error('Error removing playlist {0}: {1}'.format(name, e))
+
+
 script = Script('itunes-playlist','Import and export itunes playlists')
-script.add_argument('-D','--directory', default=DEFAULT_DIRECTORY, help='Playlist directory for m3u files')
-script.add_argument('playlists', nargs='*', help='Playlists to process')
 
 c = script.add_subcommand(ListCommand('list', 'List playlists'))
 c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
 c.add_argument('-y','--yearly', action='store_true', help='Order listed tracks by year')
 c.add_argument('-f','--format', help='List formatting string')
+c.add_argument('playlists', nargs='*', help='Playlists to process')
 
 c = script.add_subcommand(ExportFilesCommand('export-files', 'Export playlists as files'))
 c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
 c.add_argument('-y','--yearly', action='store_true', help='Order exported tracks by year')
 c.add_argument('-f','--format', help='Filename formatting string')
+c.add_argument('playlists', nargs='*', help='Playlists to process')
 
-c = script.add_subcommand(ExportCommand('export', 'Export playlists'))
+c = script.add_subcommand(ExportCommand('export', 'Export m3u playlists'))
+script.add_argument('-D','--directory', default=DEFAULT_DIRECTORY, help='Playlist directory for m3u files')
 c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
 c.add_argument('-E','--ignore-empty', action='store_true', help='Ignore empty playlists')
+c.add_argument('playlists', nargs='*', help='Playlists to process')
 
 c = script.add_subcommand(ImportCommand('import', 'Import playlists'))
 c.add_argument('-s','--smart-playlists', action='store_true', help='Include smart playlists')
+c.add_argument('playlists', nargs='*', help='Playlists to process')
+
+c = script.add_subcommand(CreateCommand('create', 'Create playlists'))
+c.add_argument('names', nargs='*', help='Names of playlists to create')
+
+c = script.add_subcommand(RemoveCommand('remove', 'Remove playlists'))
+c.add_argument('names', nargs='*', help='Names of playlists to create')
 
 script.run()
 

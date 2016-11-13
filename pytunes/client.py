@@ -22,13 +22,18 @@ from pytunes import terminology as itunes_terminology
 from pytunes.constants import TRACK_FIELDS, TRACK_SYS_FIELDS, \
                               TRACK_INT_FIELDS, TRACK_FLOAT_FIELDS, \
                               TRACK_DATE_FORMAT, TRACK_DATE_FIELDS, \
-                              REPEAT_VALUES, ITUNES_PLAYER_STATE_NAMES
+                              REPEAT_VALUES, ITUNES_PLAYER_STATE_NAMES, \
+                              SKIPPED_PLAYLISTS
+from pytunes.database import iTunesIndexDB
+from pytunes.playlist import iTunesPlaylist
 
 ITUNES_DIR = os.path.join(os.getenv('HOME'), 'Music', 'iTunes')
 ITUNES_MUSIC = os.path.join(ITUNES_DIR, 'iTunes Media', 'Music')
 ITUNES_PATH_FILE = os.path.join(ITUNES_DIR, 'library_path.txt')
+ITUNES_INDEX_DB = os.path.join(ITUNES_DIR, 'iTunes Track Index.sqlite')
 
 ITUNES_BINARY_PATH = '/Applications/iTunes.app/Contents/MacOS/iTunes'
+
 
 class iTunesMusicTree(Tree):
     """iTunes music tree
@@ -76,7 +81,9 @@ class iTunes(object):
 
         reload(sys)
         sys.setdefaultencoding('utf-8')
+
         self.__dict__['_iTunes__instance__'] = iTunes.__instance__
+        self.indexdb = iTunesIndexDB(self, ITUNES_INDEX_DB)
 
     @property
     def itunes(self):
@@ -118,6 +125,13 @@ class iTunes(object):
                 raise AttributeError('No such iTunes attribute: {0}: {1}'.format(attr, e))
 
         @property
+        def path(self):
+            if self.itunes is not None:
+                return '{0}'.format(self.itunes).replace("app(u'", "").replace("')", "")
+            else:
+                return ''
+
+        @property
         def is_running(self):
             """Check if user has itunes open
 
@@ -127,17 +141,6 @@ class iTunes(object):
                 if process.userid == os.geteuid():
                     return True
             return False
-
-    @property
-    def library(self):
-        """iTunes library
-
-        Return configured iTunes library
-        """
-        for src in self.itunes.sources.get():
-            if src.kind.get() == appscript.k.library:
-                return src
-        return None
 
     @property
     def status(self):
@@ -159,7 +162,7 @@ class iTunes(object):
         Returns currently selected iTunes track or None
         """
         try:
-            return Track(self.itunes.current_track())
+            return Track(self, self.itunes.current_track())
 
         except appscript.reference.CommandError:
             return None
@@ -194,7 +197,7 @@ class iTunes(object):
 
         """
         try:
-            return self.itunes.current_playlist.shuffle.get()
+            return self.itunes.shuffle_enabled.get()
         except appscript.reference.CommandError:
             return None
 
@@ -205,7 +208,7 @@ class iTunes(object):
         Set shuffle mode
         """
         value = value and True or False
-        self.itunes.current_playlist.shuffle.set(to=value)
+        self.itunes.shuffle_enabled.set(to=value)
 
     @property
     def volume(self):
@@ -226,6 +229,86 @@ class iTunes(object):
             raise iTunesError('Volume adjustment must be in range 0-100')
         self.itunes.sound_volume.set(to=value)
 
+    @property
+    def library(self):
+        """iTunes library
+
+        Return configured iTunes library
+        """
+        return iTunesPlaylist(self)
+
+    @property
+    def smart_playlists(self):
+        """Return user smart playlists
+
+        """
+        playlists = []
+        for pl in self.itunes.user_playlists.get():
+            name = pl.name.get()
+            if name not in SKIPPED_PLAYLISTS and pl.smart.get():
+                playlists.append(iTunesPlaylist(self, name))
+        return playlists
+
+    @property
+    def playlists(self):
+        """Return user playlists
+
+        Skips smart playlists and playlists in pytunes.constants.SKIPPED_PLAYLISTS
+        """
+        playlists = []
+        for pl in self.itunes.user_playlists.get():
+            name = pl.name.get()
+            if name in SKIPPED_PLAYLISTS or pl.smart.get():
+                continue
+            playlists.append(iTunesPlaylist(self, name))
+        return playlists
+
+    @property
+    def library(self):
+        """Return iTunes library
+
+        Returns main library as iTunesPlaylist
+        """
+        return iTunesPlaylist(self)
+
+    def create_playlist(self, name):
+        """Create playlist
+
+        Returns created playlist as iTunesPlaylist object
+        """
+        self.itunes.make(
+            new=appscript.k.user_playlist,
+            at='Playlists',
+            with_properties={appscript.k.name: name},
+        )
+        return iTunesPlaylist(self, name)
+
+    def delete_playlist(self, name):
+        """Delete playlist
+
+        Note: if there are multiple lists with same name, ALL are removed.
+        """
+        for pl in self.itunes.user_playlists.get():
+            if pl.name.get() == name:
+                pl.delete()
+
+    def get_playlist(self, name):
+        """Get playlist by name
+
+        """
+        for pl in self.itunes.user_playlists.get():
+            if pl.name.get() == name:
+                return iTunesPlaylist(self, name)
+        raise iTunesError('No such playlist: {0}'.format(name))
+
+    def get_playlist_track(self, playlist, index):
+        """Get playlist track by index
+
+        Playlist must be a reference to internal playlist object: this is used
+        from iTunesPlaylist class.
+        """
+        return Track(self, playlist.file_tracks[index])
+
     def previous(self):
         """Previous track
 
@@ -241,6 +324,32 @@ class iTunes(object):
         """
         return self.next_track()
 
+    def jump(self, index):
+        """Play track by index
+
+        """
+        try:
+            self.itunes.play(self.library.playlist.file_tracks[index])
+        except appscript.reference.CommandError:
+            raise iTunesError('Invalid library index: {0}'.format(index))
+        return self.current_track
+
+    def play(self, path=None):
+        """Play track by path
+
+        """
+        if path is not None:
+            if os.path.isdir(path):
+                path = os.path.join(path, os.listdir(path)[0])
+            try:
+                self.jump(self.indexdb.lookup_index(path))
+            except iTunesError:
+                pass
+            self.itunes.play(mactypes.Alias(path))
+        else:
+            self.itunes.play()
+        return self.current_track
+
 
 class Track(object):
     """Track accessor
@@ -249,13 +358,15 @@ class Track(object):
 
     """
 
-    def __init__(self, track):
-        self.itunes = iTunes()
+    def __init__(self, client, track):
+        self.client = client
         self.track = track
 
         try:
-            self.path = self.itunes.get(self.track.location).path
+            self.path = self.client.get(self.track.location).path.decode('utf-8')
         except AttributeError:
+            self.path = None
+        except appscript.reference.CommandError:
             self.path = None
 
     def __repr__(self):
@@ -289,7 +400,7 @@ class Track(object):
             item = 'name'
 
         try:
-            value = self.itunes.get(self.track.__getattr__(item))
+            value = self.client.get(self.track.__getattr__(item))
             if value == appscript.k.missing_value:
                 value = None
 
@@ -305,11 +416,13 @@ class Track(object):
                 return unicode(value)
 
             except AttributeError as e:
-                print e
                 return value
 
         except AttributeError:
             pass
+
+        except appscript.reference.CommandError as e:
+            raise iTunesError('Error reading track attribute: {0}'.format(e))
 
         raise KeyError('Invalid Track item: {0}'.format(item))
 
@@ -327,14 +440,14 @@ class Track(object):
         if item in TRACK_FIELDS:
             try:
                 entry = self.track.__getattr__(item)
-                self.itunes.set(entry, to=value)
+                self.client.set(entry, to=value)
             except appscript.reference.CommandError as e:
                 raise ValueError('ERROR setting {0} to {1}: {2}'.format(item, value, e))
 
         elif item in TRACK_SYS_FIELDS:
             raise ValueError('Track attribute {0} is read-only'.format(item))
 
-        elif item in ( 'itunes', 'track', 'path', 'log' ):
+        elif item in ( 'client', 'track', 'path', 'log' ):
             self.__dict__[item] = value
 
         else:
@@ -430,7 +543,7 @@ class Track(object):
         """Refresh trck
 
         """
-        self.itunes.refresh(self.track)
+        self.client.refresh(self.track)
 
     def keys(self):
         keys = ['path']

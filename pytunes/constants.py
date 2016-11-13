@@ -1,8 +1,25 @@
+# -*- coding: utf-8 -*-
 """
 Field and order specs
 """
 
 import appscript
+
+SKIPPED_PLAYLISTS = (
+    'iTunes U',
+    'Music',
+    'Movies',
+    'Videos',
+    'Home Videos',
+    'Films',
+    'TV Shows',
+    'TV Programmes',
+    'Audiobooks',
+    'Purchased',
+    'Books',
+    'PDFs',
+    'Genius',
+)
 
 TRACK_SYS_FIELDS = (
     'id',

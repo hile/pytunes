@@ -11,11 +11,10 @@ import stat
 
 from soundforest import normalized, SoundforestError
 from soundforest.cli import Script, ScriptError
-from soundfourest.tree import Tree, Album, Track
+from soundforest.tree import Tree, Album, Track
 
 from pytunes import iTunesError
-from pytunes.client import iTunesMusicTree
-from pytunes.playlist import iTunesPlaylist
+from pytunes.client import iTunes, iTunesMusicTree
 
 # How often we report something
 PROGRESS_INTERVAL = 1000
@@ -28,14 +27,14 @@ script.add_argument('-p', '--position', type=int, help='Start from given positio
 script.add_argument('-m', '--metadata', action='store_true', help='Update metadata')
 args = script.parse_args()
 
+client = iTunes()
 script.log.info('Loading iTunes library playlist')
-library = iTunesPlaylist('library')
 if args.position:
     try:
-        library.jump(args.position)
+        client.library.jump(args.position)
     except ValueError:
         script.exit(1,
-            'Invalid position: {0} ({1:d} entries)'.format((args.position, len(library)))
+            'Invalid position: {0} ({1:d} entries)'.format((args.position, len(client.library)))
         )
 try:
     tree = iTunesMusicTree(itunes_path=args.itunes_directory, tree_path=args.music_path)
@@ -55,7 +54,7 @@ start = time.time()
 itunes_files = {}
 script.log.info('Checking library files against itunes')
 
-for entry in library:
+for entry in client.library:
     processed += 1
     if processed % progress_interval == 0:
         progress_time = float(time.time()-progress_start)
@@ -68,13 +67,13 @@ for entry in library:
 
     except AttributeError:
         script.log.info('Removing invalid entry (no path defined)')
-        library.delete(entry)
+        client.library.delete(entry)
         continue
 
     if not tree_paths.has_key(path):
         if not os.path.isfile(path):
             script.log.info('Removing non-existing: "}0}"'.format(path))
-            library.delete(entry)
+            client.library.delete(entry)
 
         else:
             script.log.info('File outside tree: {0}'.format(path))
@@ -88,11 +87,11 @@ for entry in library:
 
             song = Track(entry.path)
             if entry.syncTags(song):
-                library.__next = entry.index
+                client.library.__next = entry.index
 
     else:
         script.log.info('Removing duplicate: {0}'.format(entry.path))
-        library.delete(entry)
+        client.library.delete(entry)
 
 loadtime = float(time.time()-start)
 script.log.info('Checked {0:d} files in {1:4.2f} seconds'.format(processed, loadtime))
@@ -108,7 +107,7 @@ if args.position is None:
         if not itunes_files.has_key(path):
             script.log.info('Adding: {0}'.format(path))
             try:
-                library.add(path)
+                client.library.add(path)
             except ValueError as e:
                 print(e)
 
