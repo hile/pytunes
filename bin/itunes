@@ -11,6 +11,7 @@ from pytunes.client import iTunes
 COMMAND_CHOICES = (
     'play',
     'stop',
+    'shuffle',
     'next',
     'previous',
     'info',
@@ -62,6 +63,14 @@ if args.command == 'previous':
 
 if args.command == 'next':
     itunes.next()
+
+if args.command == 'shuffle':
+    if args.value == 'enable':
+        itunes.shuffle = True
+    elif args.value == 'disable':
+        itunes.shuffle = False
+    else:
+        script.message('Shuffle {0}'.format(itunes.shuffle and 'enabled' or 'disabled'))
 
 if args.command == 'play':
     if args.value:
