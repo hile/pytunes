@@ -24,7 +24,7 @@ from pytunes.constants import TRACK_FIELDS, TRACK_SYS_FIELDS, \
                               TRACK_DATE_FORMAT, TRACK_DATE_FIELDS, \
                               REPEAT_VALUES, ITUNES_PLAYER_STATE_NAMES, \
                               SKIPPED_PLAYLISTS
-from pytunes.database import iTunesIndexDB
+from pytunes.indexdb import iTunesIndexDB
 from pytunes.playlist import iTunesPlaylist
 
 ITUNES_DIR = os.path.join(os.getenv('HOME'), 'Music', 'iTunes')
