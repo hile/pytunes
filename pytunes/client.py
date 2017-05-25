@@ -107,7 +107,6 @@ class iTunes(object):
         """
         def __init__(self):
             self.itunes = None
-            self.__connect__()
 
         def __connect__(self):
             if self.is_running:
