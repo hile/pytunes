@@ -148,6 +148,8 @@ class iTunes(object):
         Returns current iTunes play status string from
         ITUNES_PLAYER_STATE_NAMES
         """
+        if self.itunes is None:
+            self.__connect__()
         s = self.itunes.player_state.get()
         try:
             return ITUNES_PLAYER_STATE_NAMES[s]
@@ -160,6 +162,8 @@ class iTunes(object):
 
         Returns currently selected iTunes track or None
         """
+        if self.itunes is None:
+            self.__connect__()
         try:
             return Track(self, self.itunes.current_track())
 
@@ -171,6 +175,8 @@ class iTunes(object):
         """Get repeat
 
         """
+        if self.itunes is None:
+            self.__connect__()
         try:
             value = self.itunes.current_playlist.song_repeat.get()
             for key in REPEAT_VALUES:
@@ -185,6 +191,8 @@ class iTunes(object):
 
         Set repeat mode. Valid values are in pytunes.constants.REPEAT_VALUES
         """
+        if self.itunes is None:
+            self.__connect__()
         try:
             self.itunes.current_playlist.song_repeat.set(to=REPEAT_VALUES[value])
         except KeyError:
@@ -195,6 +203,8 @@ class iTunes(object):
         """Get shuffle mode
 
         """
+        if self.itunes is None:
+            self.__connect__()
         try:
             return self.itunes.shuffle_enabled.get()
         except appscript.reference.CommandError:
@@ -206,6 +216,8 @@ class iTunes(object):
 
         Set shuffle mode
         """
+        if self.itunes is None:
+            self.__connect__()
         value = value and True or False
         self.itunes.shuffle_enabled.set(to=value)
 
@@ -214,6 +226,8 @@ class iTunes(object):
         """Get volume
 
         """
+        if self.itunes is None:
+            self.__connect__()
         return self.itunes.sound_volume.get()
 
     @volume.setter
@@ -222,6 +236,8 @@ class iTunes(object):
 
         Must be a integer in range 0-100
         """
+        if self.itunes is None:
+            self.__connect__()
         if not isinstance(value, int):
             raise iTunesError('Volume adjustment must be integer value')
         if value < 0 or value > 100:
@@ -242,6 +258,8 @@ class iTunes(object):
 
         """
         playlists = []
+        if self.itunes is None:
+            self.__connect__()
         for pl in self.itunes.user_playlists.get():
             name = pl.name.get()
             if name not in SKIPPED_PLAYLISTS and pl.smart.get():
@@ -255,6 +273,8 @@ class iTunes(object):
         Skips smart playlists and playlists in pytunes.constants.SKIPPED_PLAYLISTS
         """
         playlists = []
+        if self.itunes is None:
+            self.__connect__()
         for pl in self.itunes.user_playlists.get():
             name = pl.name.get()
             if name in SKIPPED_PLAYLISTS or pl.smart.get():
@@ -275,6 +295,8 @@ class iTunes(object):
 
         Returns created playlist as iTunesPlaylist object
         """
+        if self.itunes is None:
+            self.__connect__()
         self.itunes.make(
             new=appscript.k.user_playlist,
             at='Playlists',
@@ -287,6 +309,8 @@ class iTunes(object):
 
         Note: if there are multiple lists with same name, ALL are removed.
         """
+        if self.itunes is None:
+            self.__connect__()
         for pl in self.itunes.user_playlists.get():
             if pl.name.get() == name:
                 pl.delete()
@@ -295,6 +319,8 @@ class iTunes(object):
         """Get playlist by name
 
         """
+        if self.itunes is None:
+            self.__connect__()
         for pl in self.itunes.user_playlists.get():
             if pl.name.get() == name:
                 return iTunesPlaylist(self, name)
@@ -327,6 +353,8 @@ class iTunes(object):
         """Play track by index
 
         """
+        if self.itunes is None:
+            self.__connect__()
         try:
             self.itunes.play(self.library.playlist.file_tracks[index])
         except appscript.reference.CommandError:
@@ -337,6 +365,8 @@ class iTunes(object):
         """Play track by path
 
         """
+        if self.itunes is None:
+            self.__connect__()
         if path is not None:
             path = path.decode('utf-8')
             if os.path.isdir(path):
@@ -355,7 +385,6 @@ class Track(object):
     """Track accessor
 
     Track in itunes library
-
     """
 
     def __init__(self, client, track):
