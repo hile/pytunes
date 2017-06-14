@@ -16,10 +16,10 @@ setup(
     packages = find_packages(),
     install_requires = (
         'soundforest>=4.1.1',
-        'systematic>=4.5.5',
+        'systematic>=4.7.3',
         'appscript',
         'configobj',
         'darwinist',
+        'zeroconf',
     ),
 )
-
