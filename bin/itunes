@@ -3,121 +3,152 @@
 Example script to view and control itunes playback status
 """
 
+import time
+
 from soundforest.cli import Script, ScriptCommand, ScriptError
 
 from pytunes import iTunesError
 from pytunes.client import iTunes
 
-COMMAND_CHOICES = (
-    'play',
-    'stop',
-    'shuffle',
-    'next',
-    'previous',
-    'info',
-    'volume',
-    'lookup',
-    'update-index',
-)
+INFO_FORMAT = """
+Artist  %(artist)s
+Album   %(album)s
+Title   %(title)s
+Genre   %(genre)s
+Track   %(track_number)s/%(track_count)s
+Length  %(time)s
+Year    %(year)s
+BPM     %(bpm)s
+Comment %(comment)s
+"""
 
-script = Script()
-script.add_argument('-v', '--verbose', action='store_true', help='Verbose messages')
-script.add_argument('command', nargs='?', default='info', choices=COMMAND_CHOICES, help='Command to execute')
-script.add_argument('value', nargs='?', help='Volume value (0-100)')
-args = script.parse_args()
+class iTunesCLICommand(ScriptCommand):
+    """iTunes CLI commands
 
-try:
-    itunes = iTunes()
-except iTunesError as e:
-    script.exit(1, e)
+    """
+    def __init__(self, *args, **kwargs):
+        super(iTunesCLICommand, self).__init__(*args, **kwargs)
 
-if args.command == 'volume':
-    if args.value is None:
-        script.message('volume {0:d} %%'.format(itunes.volume))
-
-    else:
         try:
-            if args.value[:1] == '+':
-                args.value = itunes.volume + int(args.value[1:])
-                if args.value > 100:
-                    args.value = 100
+            self.itunes = iTunes()
+        except iTunesError as e:
+            self.exit(1, 'Error connecting to iTunes: {0}'.format(e))
 
-            elif args.value[:1] == '-':
-                args.value = itunes.volume - int(args.value[1:])
-                if args.value < 0:
-                    args.value = 0
 
+class InfoCommand(iTunesCLICommand):
+    def run(self, args):
+        if self.itunes.current_track:
+            track = self.itunes.current_track
+            if args.verbose:
+                script.message(track.path)
+            script.message(INFO_FORMAT % (track))
+        else:
+            script.message('No song playing')
+
+
+class PlayCommand(iTunesCLICommand):
+    def run(self, args):
+        if args.track:
+            self.itunes.play(args.track)
+
+        if self.itunes.status == 'playing':
+            self.itunes.pause()
+        else:
+            self.itunes.play()
+
+
+class StopCommand(iTunesCLICommand):
+    def run(self, args):
+        if self.itunes.status in ('playing', 'paused',):
+            self.itunes.stop()
+
+
+class PreviousTrackCommand(iTunesCLICommand):
+    def run(self, args):
+        self.itunes.previous()
+
+
+class NextTrackCommand(iTunesCLICommand):
+    def run(self, args):
+        self.itunes.next()
+
+
+class ShuffleModeCommand(iTunesCLICommand):
+    def run(self, args):
+        if args.mode == 'enable':
+            self.itunes.shuffle = True
+        elif args.mode == 'disable':
+            self.itunes.shuffle = False
+        else:
+            script.message('Shuffle {0}'.format(self.itunes.shuffle and 'enabled' or 'disabled'))
+
+
+class VolumeCommand(iTunesCLICommand):
+    def run(self, args):
+        if args.volume is None:
+            script.message('volume {0:d}%'.format(self.itunes.volume))
+            return
+
+        fade = True
+        try:
+            if args.volume.startswith('+'):
+                volume = self.itunes.volume + int(args.volume[1:])
+                if volume > 100:
+                    volume = 100
+            elif args.volume.startswith('-'):
+                volume = self.itunes.volume - int(args.volume[1:])
+                if volume < 0:
+                    volume = 0
             else:
-                args.value = int(args.value)
-
+                volume = int(args.volume)
+                fade = False
         except ValueError:
-            script.exit(1, 'Invalid volume value {0}'.format(args.value))
+            script.exit(1, 'Invalid volume value {0}'.format(args.volume))
 
         try:
-            itunes.volume = args.value
+            if fade:
+                if self.itunes.volume < volume:
+                    while self.itunes.volume < volume:
+                        self.itunes.volume = self.itunes.volume + 1
+                        time.sleep(0.01)
+                if self.itunes.volume > volume:
+                    while self.itunes.volume > volume:
+                        self.itunes.volume = self.itunes.volume - 1
+                        time.sleep(0.01)
+            else:
+                self.itunes.volume = volume
         except iTunesError as e:
             script.exit(1,e)
 
-if args.command == 'previous':
-    itunes.previous()
 
-if args.command == 'next':
-    itunes.next()
+class UpdateIndexCommand(iTunesCLICommand):
+    def run(self, args):
+        try:
+            script.message('Update: {0}'.format(self.itunes.indexdb))
+            self.itunes.indexdb.update()
+        except iTunesError as e:
+            script.error('Error updating {0}: {1}'.format(self.itunes.indexdb, e))
 
-if args.command == 'shuffle':
-    if args.value == 'enable':
-        itunes.shuffle = True
-    elif args.value == 'disable':
-        itunes.shuffle = False
-    else:
-        script.message('Shuffle {0}'.format(itunes.shuffle and 'enabled' or 'disabled'))
 
-if args.command == 'play':
-    if args.value:
-        itunes.play(args.value)
+script = Script()
 
-    elif itunes.status == 'playing':
-        script.log.info('Stopping iTunes playback')
-        itunes.pause()
+c = script.add_subcommand(InfoCommand('info', 'Show playing track information'))
+c.add_argument('-v', '--verbose', action='store_true', help='Verbose messages')
 
-    else:
-        script.log.info('Starting iTunes playback')
-        itunes.play()
+c = script.add_subcommand(PlayCommand('play', 'Play/pause/jump to file'))
+c.add_argument('track', nargs='?', help='Track to play')
 
-if args.command == 'stop':
+c = script.add_subcommand(StopCommand('stop', 'Stop playback'))
 
-    if itunes.status in ('playing', 'paused',):
-        script.log.info('Stopping iTunes playback')
-        itunes.stop()
+c = script.add_subcommand(PreviousTrackCommand('previous', 'Play previous tracks'))
+c = script.add_subcommand(NextTrackCommand('next', 'Play next tracks'))
 
-    else:
-        script.log.info('iTunes was already stopped')
+c = script.add_subcommand(ShuffleModeCommand('shuffle', 'Toggle or show suffle mode'))
+c.add_argument('mode',  nargs='?', choices=('enable', 'disable', ), help='Enable or disable shuffle mode')
 
-if args.command == 'info':
+c = script.add_subcommand(VolumeCommand('volume', 'Adjust or show playback volume'))
+c.add_argument('volume',  nargs='?', help='Value to set')
 
-    if itunes.current_track:
-        if args.verbose:
-            script.message(itunes.current_track.path)
+c = script.add_subcommand(UpdateIndexCommand('update-index', 'Update track index database'))
 
-        script.message("""Artist:  %(artist)s
-Album:   %(album)s
-Title:   %(title)s
-Genre:   %(genre)s
-Year:    %(year)s""" % (itunes.current_track)
-        )
-
-    else:
-        script.message('No song playing')
-
-if args.command == 'update-index':
-    try:
-        script.message('Update: {0}'.format(itunes.indexdb))
-        itunes.indexdb.update()
-    except iTunesError as e:
-        script.error('Error updating {0}: {1}'.format(itunes.indexdb, e))
-
-if args.command == 'lookup':
-    try:
-        script.message(itunes.indexdb.lookup_index(args.value))
-    except iTunesError as e:
-        script.error(e)
+args = script.run()
