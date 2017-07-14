@@ -50,11 +50,11 @@ class PlayCommand(iTunesCLICommand):
     def run(self, args):
         if args.track:
             self.itunes.play(args.track)
-
-        if self.itunes.status == 'playing':
-            self.itunes.pause()
         else:
-            self.itunes.play()
+            if self.itunes.status == 'playing':
+                self.itunes.pause()
+            else:
+                self.itunes.play()
 
 
 class StopCommand(iTunesCLICommand):
