@@ -8,7 +8,7 @@ client = iTunes()
 
 """
 
-__version__ = '12.6.1.25.3'
+__version__ = '12.6.1.25.4'
 
 class iTunesError(Exception):
     pass
