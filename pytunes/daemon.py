@@ -37,7 +37,7 @@ class iTunesDaemon(object):
 
         path =  os.path.expandvars(os.path.expanduser(self.logfile))
         try:
-            with open(path, 'w') as f:
+            with open(path, 'a') as f:
                 f.write('{0} {1}\n'.format(
                     details['started'],
                     details['path'],
