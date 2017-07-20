@@ -79,9 +79,6 @@ class iTunes(object):
         if iTunes.__instance__ is None:
             iTunes.__instance__ = iTunes.Instance()
 
-        reload(sys)
-        sys.setdefaultencoding('utf-8')
-
         self.__dict__['_iTunes__instance__'] = iTunes.__instance__
         self.indexdb = iTunesIndexDB(self, ITUNES_INDEX_DB)
 
@@ -442,7 +439,7 @@ class Track(object):
                     return value
                 elif item == 'location':
                     return value.path
-                return unicode(value)
+                return str(value)
 
             except AttributeError as e:
                 return value
