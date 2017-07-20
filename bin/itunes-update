@@ -77,7 +77,7 @@ for entry in client.library:
         else:
             script.log.info('File outside tree: {0}'.format(path))
 
-    elif not itunes_files.has_key(path):
+    elif path not in itunes_files:
         itunes_files[path] = entry
         if args.metadata:
             mtime = os.stat(path).st_mtime
@@ -103,7 +103,7 @@ if args.position is None:
 
     for path in sorted(tree_paths.keys()):
 
-        if not itunes_files.has_key(path):
+        if path not in itunes_files:
             script.log.info('Adding: {0}'.format(path))
             try:
                 client.library.add(path)
