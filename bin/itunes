@@ -130,6 +130,17 @@ class UpdateIndexCommand(iTunesCLICommand):
             script.error('Error updating {0}: {1}'.format(self.itunes.indexdb, e))
 
 
+class LookupDBCommand(iTunesCLICommand):
+    def run(self, args):
+        for path in args.paths:
+            try:
+                index = self.itunes.indexdb.lookup_index(path)
+                if index:
+                    self.message('{0:6} {1}'.format(index, path))
+            except iTunesError as e:
+                script.error('Error updating {0}: {1}'.format(self.itunes.indexdb, e))
+
+
 script = Script()
 
 c = script.add_subcommand(InfoCommand('info', 'Show playing track information'))

@@ -15,8 +15,8 @@ setup(
     scripts = glob.glob('bin/*'),
     packages = find_packages(),
     install_requires = (
-        'soundforest>=4.1.1',
-        'systematic>=4.7.8',
+        'soundforest>=4.2.2',
+        'systematic>=4.7.11',
         'appscript',
         'configobj',
         'darwinist',

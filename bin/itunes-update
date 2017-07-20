@@ -57,20 +57,19 @@ script.log.info('Checking library files against itunes')
 for entry in client.library:
     processed += 1
     if processed % progress_interval == 0:
-        progress_time = float(time.time()-progress_start)
-        progress_rate = float(progress_interval/progress_time)
+        progress_time = float(time.time() - progress_start)
+        progress_rate = int(progress_interval / progress_time)
         script.log.info('Index {0:d} ({1:d} entries per second)'.format(processed, progress_rate))
         progress_start = time.time()
 
     try:
         path = normalized(os.path.realpath(entry.path))
-
     except AttributeError:
         script.log.info('Removing invalid entry (no path defined)')
         client.library.delete(entry)
         continue
 
-    if not tree_paths.has_key(path):
+    if path not in tree_paths:
         if not os.path.isfile(path):
             script.log.info('Removing non-existing: "}0}"'.format(path))
             client.library.delete(entry)

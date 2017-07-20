@@ -389,8 +389,8 @@ class Track(object):
         self.track = track
 
         try:
-            self.path = self.client.get(self.track.location).path.decode('utf-8')
-        except AttributeError:
+            self.path = self.client.get(self.track.location).path
+        except AttributeError as e:
             self.path = None
         except appscript.reference.CommandError:
             self.path = None
