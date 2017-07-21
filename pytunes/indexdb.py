@@ -57,11 +57,11 @@ class iTunesIndexDB(SQLiteDatabase):
             if mtime:
                 if res[1] != mtime:
                     c = self.cursor
-                    c.execute("""UPDATE itunes set mtime=? WHERE key=?""", (mtime, key,))
+                    c.execute("""UPDATE itunes set mtime=? WHERE key=?""", (mtime, res[0],))
                     self.commit()
             else:
                 c = self.cursor
-                c.execute("""DELETE FROM itunes WHERE key=?""", (key,))
+                c.execute("""DELETE FROM itunes WHERE key=?""", (res[0],))
                 self.commit()
 
         elif mtime is not None:
@@ -78,22 +78,12 @@ class iTunesIndexDB(SQLiteDatabase):
             except OperationalError as e:
                 raise iTunesError(e)
 
-    def cleanup(self, ids):
-        """Remove unknown IDs
-
-        """
-        try:
-            c = self.cursor
-            c.execute("""DELETE FROM itunes WHERE key not in (?)""", (','.join(ids),))
-            self.commit()
-        except OperationalError as e:
-            raise iTunesError(e)
-
     def lookup_index(self, path):
         """Find index for filename
 
         Raises iTunesError if path was not in database
         """
+        path = os.path.realpath(path)
         try:
             c = self.cursor
             c.execute("""SELECT key FROM itunes WHERE path=?""", (path,))
@@ -104,11 +94,23 @@ class iTunesIndexDB(SQLiteDatabase):
             return res[0]
         else:
             raise iTunesError('Track not in index database: {0}'.format(path))
-        del c
+
+    def cleanup(self, ids):
+        """Remove unknown IDs
+
+        Removes tracks with ID not provided in list 'ids'
+        """
+        try:
+            c = self.cursor
+            c.execute("""DELETE FROM itunes WHERE key not in (?)""", (','.join(ids),))
+            self.commit()
+        except OperationalError as e:
+            raise iTunesError(e)
 
     def update(self):
         """Update index
 
+        Update itunes track sqlite index
         """
         ids = []
         for i, track in enumerate(self.client.library):
@@ -116,5 +118,5 @@ class iTunesIndexDB(SQLiteDatabase):
             if track.path is not None:
                 self.add_track(track)
                 ids.append('{0}'.format(track.index))
-        self.cleanup(ids)
+        cleanup(ids)
 

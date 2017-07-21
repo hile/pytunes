@@ -36,6 +36,10 @@ class iTunesCLICommand(ScriptCommand):
 
 
 class InfoCommand(iTunesCLICommand):
+    """Show info
+
+    Show info about playing track
+    """
     def run(self, args):
         if self.itunes.current_track:
             track = self.itunes.current_track
@@ -47,6 +51,9 @@ class InfoCommand(iTunesCLICommand):
 
 
 class PlayCommand(iTunesCLICommand):
+    """Play track or start playback
+
+    """
     def run(self, args):
         if args.track:
             self.itunes.play(args.track)
@@ -58,22 +65,34 @@ class PlayCommand(iTunesCLICommand):
 
 
 class StopCommand(iTunesCLICommand):
+    """Stop playback
+
+    """
     def run(self, args):
         if self.itunes.status in ('playing', 'paused',):
             self.itunes.stop()
 
 
 class PreviousTrackCommand(iTunesCLICommand):
+    """Jump to previous tack
+
+    """
     def run(self, args):
         self.itunes.previous()
 
 
 class NextTrackCommand(iTunesCLICommand):
+    """Jump to next tack
+
+    """
     def run(self, args):
         self.itunes.next()
 
 
 class ShuffleModeCommand(iTunesCLICommand):
+    """Show or set shuffle mode
+
+    """
     def run(self, args):
         if args.mode == 'enable':
             self.itunes.shuffle = True
@@ -84,6 +103,9 @@ class ShuffleModeCommand(iTunesCLICommand):
 
 
 class VolumeCommand(iTunesCLICommand):
+    """Show or set volume
+
+    """
     def run(self, args):
         if args.volume is None:
             script.message('volume {0:d}%'.format(self.itunes.volume))
@@ -122,6 +144,10 @@ class VolumeCommand(iTunesCLICommand):
 
 
 class UpdateIndexCommand(iTunesCLICommand):
+    """Update index database
+
+    Update itunes track index database
+    """
     def run(self, args):
         try:
             script.message('Update: {0}'.format(self.itunes.indexdb))
@@ -131,6 +157,10 @@ class UpdateIndexCommand(iTunesCLICommand):
 
 
 class LookupDBCommand(iTunesCLICommand):
+    """Lookup track index
+
+    Lookup track index by path from database
+    """
     def run(self, args):
         for path in args.paths:
             try:
@@ -138,7 +168,7 @@ class LookupDBCommand(iTunesCLICommand):
                 if index:
                     self.message('{0:6} {1}'.format(index, path))
             except iTunesError as e:
-                script.error('Error updating {0}: {1}'.format(self.itunes.indexdb, e))
+                script.error('{0}'.format(e))
 
 
 script = Script()
@@ -161,5 +191,8 @@ c = script.add_subcommand(VolumeCommand('volume', 'Adjust or show playback volum
 c.add_argument('volume',  nargs='?', help='Value to set')
 
 c = script.add_subcommand(UpdateIndexCommand('update-index', 'Update track index database'))
+
+c = script.add_subcommand(LookupDBCommand('lookup-index', 'Lookup track index from database'))
+c.add_argument('paths', nargs='*', help='Track paths to lookup')
 
 args = script.run()

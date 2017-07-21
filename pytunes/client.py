@@ -365,7 +365,6 @@ class iTunes(object):
         if self.itunes is None:
             self.__connect__()
         if path is not None:
-            path = path.decode('utf-8')
             if os.path.isdir(path):
                 path = os.path.join(path, os.listdir(path)[0])
             try:

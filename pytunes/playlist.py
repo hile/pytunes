@@ -9,6 +9,9 @@ import re
 import appscript
 import mactypes
 
+from pytunes import iTunesError
+
+
 class iTunesPlaylist(object):
     """iTunes playlist
 
@@ -175,8 +178,11 @@ class iTunesPlaylist(object):
         Delete provided track entry from playlist (via entry.track)
 
         """
-        self.client.delete(entry.track)
-        if self.__index__ > 0:
-            self.__index__ -= 1
-        self.__update_len__()
+        try:
+            self.client.delete(entry.track)
+            if self.__index__ > 0:
+                self.__index__ -= 1
+            self.__update_len__()
+        except appscript.reference.CommandError as e:
+            raise iTunesError('Error deleting track {0}: {1}'.format(entry.track, e))
 
