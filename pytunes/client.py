@@ -3,27 +3,27 @@ Simple abstraction to itunes library from python with appscript
 """
 
 import appscript
-import logging
 import mactypes
 import os
-import pwd
 import re
-import sys
-import sys
 
-from datetime import datetime
 from systematic.process import Processes
 
 from soundforest.tags import TagError
-from soundforest.tree import Tree, Album, Track
+from soundforest.tree import Tree
 
 from pytunes import iTunesError
 from pytunes import terminology as itunes_terminology
-from pytunes.constants import TRACK_FIELDS, TRACK_SYS_FIELDS, \
-                              TRACK_INT_FIELDS, TRACK_FLOAT_FIELDS, \
-                              TRACK_DATE_FORMAT, TRACK_DATE_FIELDS, \
-                              REPEAT_VALUES, ITUNES_PLAYER_STATE_NAMES, \
-                              SKIPPED_PLAYLISTS
+from pytunes.constants import (
+    TRACK_FIELDS,
+    TRACK_SYS_FIELDS,
+    TRACK_INT_FIELDS,
+    TRACK_FLOAT_FIELDS,
+    TRACK_DATE_FIELDS,
+    REPEAT_VALUES,
+    ITUNES_PLAYER_STATE_NAMES,
+    SKIPPED_PLAYLISTS
+)
 from pytunes.indexdb import iTunesIndexDB
 from pytunes.playlist import iTunesPlaylist
 
@@ -49,13 +49,12 @@ class iTunesMusicTree(Tree):
         if tree_path is None:
             if os.path.isfile(ITUNES_PATH_FILE):
 
-              try:
-                  tree_path = open(ITUNES_PATH_FILE, 'r').read().strip()
-              except IOError as e:
-                  raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
-
-              except OSError as e:
-                  raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
+                try:
+                    tree_path = open(ITUNES_PATH_FILE, 'r').read().strip()
+                except IOError as e:
+                    raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
+                except OSError as e:
+                    raise iTunesError('Error opening {0}: {1}'.format(tree_path, e))
 
             else:
                 tree_path = ITUNES_MUSIC
@@ -133,7 +132,7 @@ class iTunes(object):
 
             Check if iTunes process exists for this user
             """
-            for process in  Processes().filter(command=ITUNES_BINARY_PATH):
+            for process in Processes().filter(command=ITUNES_BINARY_PATH):
                 if process.userid == os.geteuid():
                     return True
             return False
@@ -279,14 +278,6 @@ class iTunes(object):
             playlists.append(iTunesPlaylist(self, name))
         return playlists
 
-    @property
-    def library(self):
-        """Return iTunes library
-
-        Returns main library as iTunesPlaylist
-        """
-        return iTunesPlaylist(self)
-
     def create_playlist(self, name):
         """Create playlist
 
@@ -389,7 +380,7 @@ class Track(object):
 
         try:
             self.path = self.client.get(self.track.location).path
-        except AttributeError as e:
+        except AttributeError:
             self.path = None
         except appscript.reference.CommandError:
             self.path = None
@@ -415,13 +406,13 @@ class Track(object):
         if item == 'extension':
             return os.path.splitext(self.path)[1][1:]
 
-        if item in ( 'id', 'ID', ):
+        if item in ('id', 'ID'):
             item = 'id'
 
-        if item in ( 'date', 'year', ):
+        if item in ('date', 'year'):
             item = 'year'
 
-        if item in ( 'title', 'name', ):
+        if item in ('title', 'name'):
             item = 'name'
 
         try:
@@ -440,7 +431,7 @@ class Track(object):
                     return value.path
                 return str(value)
 
-            except AttributeError as e:
+            except AttributeError:
                 return value
 
         except AttributeError:
@@ -472,7 +463,7 @@ class Track(object):
         elif item in TRACK_SYS_FIELDS:
             raise ValueError('Track attribute {0} is read-only'.format(item))
 
-        elif item in ( 'client', 'track', 'path', 'log' ):
+        elif item in ('client', 'track', 'path', 'log'):
             self.__dict__[item] = value
 
         else:
@@ -513,7 +504,7 @@ class Track(object):
         """
         try:
             current_value = self.__getattr__(tag)
-            if tag in ( 'year', 'date', ):
+            if tag in ('year', 'date'):
                 if type(value) != int:
                     try:
                         value = value.split('-')[0]
@@ -539,10 +530,10 @@ class Track(object):
         modified = False
         try:
             for tag in ('artist', 'album', 'title', 'genre', 'date', 'bpm'):
-                if not song.tags.has_key(tag):
+                if tag not in song.tags:
                     continue
 
-                if tag in ( 'bpm', 'date', ):
+                if tag in ('bpm', 'date'):
                     value = int(song.tags[tag])
                 else:
                     value = song.tags[tag]
@@ -584,4 +575,3 @@ class Track(object):
             except appscript.reference.CommandError:
                 pass
         return items
-

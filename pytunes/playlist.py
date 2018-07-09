@@ -4,8 +4,6 @@ Mapping of iTunes playlists to soundforest playlists
 """
 
 import os
-import sys
-import re
 import appscript
 import mactypes
 
@@ -185,4 +183,3 @@ class iTunesPlaylist(object):
             self.__update_len__()
         except appscript.reference.CommandError as e:
             raise iTunesError('Error deleting track {0}: {1}'.format(entry.track, e))
-

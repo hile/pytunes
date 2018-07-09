@@ -4,12 +4,10 @@ Song change monitoring and XML reporting class
 """
 
 import os
-import sys
 import time
 import base64
 import appscript
 
-from lxml import etree as ET
 from lxml.builder import E
 
 from pytunes.client import iTunes, iTunesError
@@ -57,6 +55,7 @@ IGNORE_TRACK_FIELDS = (
     'location',
 )
 
+
 class iTunesStatus(object):
     """Song status change monitoring
 
@@ -77,8 +76,7 @@ class iTunesStatus(object):
                 self.status = self.client.status
             except appscript.reference.CommandError:
                 self.current = None
-        except iTunesError as e:
-            print e
+        except iTunesError:
             self.client = None
             self.current = None
             self.status = None
@@ -127,7 +125,7 @@ class iTunesStatus(object):
         """
 
         try:
-            if self.client.status in ( 'stopped', 'paused', ):
+            if self.client.status in ('stopped', 'paused'):
                 return None
 
             if not track:
@@ -158,7 +156,8 @@ class iTunesStatus(object):
             if not self.xml_output and not xml_output:
                 return info
 
-            xml = E('itunes',
+            xml = E(
+                'itunes',
                 persistent_ID=track.persistent_ID,
                 started=info['started']
             )
@@ -169,7 +168,7 @@ class iTunesStatus(object):
                     continue
 
                 # Optional fields
-                if not info.has_key(k):
+                if k not in info:
                     continue
 
                 # Don't export empty fields
@@ -179,12 +178,14 @@ class iTunesStatus(object):
                 v = info[k]
                 try:
                     if isinstance(v, int):
-                        if v==0: continue
+                        if v == 0:
+                            continue
                         xml.append(E(k, '{0:d}'.format(v)))
                     elif isinstance(v, float):
-                        if v==0: continue
+                        if v == 0:
+                            continue
                         xml.append(E(k, '{0:3.2f}'.format(v)))
-                    elif v!='':
+                    elif v != '':
                         xml.append(E(k, v))
 
                 except ValueError:
@@ -216,7 +217,8 @@ class iTunesStatus(object):
                     print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
 
             if (self.export_albumart or export_albumart) and albumart:
-                xml.append(E('albumart',
+                xml.append(E(
+                    'albumart',
                     base64.b64encode(open(albumart, 'r').read()),
                     filename=os.path.basename(albumart)
                 ))
@@ -226,4 +228,3 @@ class iTunesStatus(object):
         except iTunesError:
             self.client = None
             return None
-

@@ -10,6 +10,6 @@ client = iTunes()
 
 __version__ = '12.6.2.20.1'
 
+
 class iTunesError(Exception):
     pass
-

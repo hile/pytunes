@@ -6,21 +6,22 @@ import os
 
 from datetime import datetime
 from pytz import timezone
-from sqlite3 import Connection, OperationalError
+from sqlite3 import OperationalError
 from systematic.sqlite import SQLiteDatabase
 
 from pytunes import iTunesError
 
 TABLES_SQL = (
-"""
-CREATE TABLE IF NOT EXISTS itunes (
-    key INTEGER PRIMARY KEY,
-    path STRING,
-    mtime INTEGER,
-    added DATE
-);
-""",
+    """
+    CREATE TABLE IF NOT EXISTS itunes (
+        key INTEGER PRIMARY KEY,
+        path STRING,
+        mtime INTEGER,
+        added DATE
+    );
+    """,
 )
+
 
 class iTunesIndexDB(SQLiteDatabase):
     """Itunes indexes
@@ -114,9 +115,7 @@ class iTunesIndexDB(SQLiteDatabase):
         """
         ids = []
         for i, track in enumerate(self.client.library):
-            retry = 0
             if track.path is not None:
                 self.add_track(track)
                 ids.append('{0}'.format(track.index))
-        cleanup(ids)
-
+        self.cleanup(ids)

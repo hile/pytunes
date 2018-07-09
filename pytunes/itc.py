@@ -3,8 +3,9 @@ ITC Albumart files
 """
 
 import os
-from struct import pack, unpack
+from struct import unpack
 from PIL import ImageFile
+
 
 class ITCArtworkFile(object):
     """ITC Albumart
@@ -21,9 +22,6 @@ class ITCArtworkFile(object):
         data = open(self.path, 'r').read()
 
         hdr_len = unpack('>i', data[0:4])[0]
-        hdr_id  = data[0:8]
-        data_len = unpack('>i', data[hdr_len:hdr_len + 4])[0]
-
         self.itc_type = data[hdr_len + 44:hdr_len + 48]
         imagedata = data[hdr_len + 208:]
         parser = ImageFile.Parser()

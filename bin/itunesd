@@ -11,9 +11,15 @@ DEFAULT_LOGFILE = '~/Library/Logs/itunes.log'
 
 script = Script()
 script.add_argument('-f', '--log-file', default=DEFAULT_LOGFILE, help='Log file')
+script.add_argument('-h', '--redis-host', help='Redis host')
+script.add_argument('-r', '--redis-auth', help='Redis auth')
 args = script.parse_args()
 
 try:
-    iTunesDaemon(logfile=args.log_file).run()
+    iTunesDaemon(
+        logfile=args.log_file,
+        redis_host=args.redis_host,
+        redis_auth=args.redis_auth,
+    ).run()
 except iTunesError as e:
     script.exit(1, e)
