@@ -5,21 +5,28 @@ Daemon process to log songs played by iTunes
 
 from soundforest.cli import Script, ScriptError
 from pytunes import iTunesError
-from pytunes.daemon import iTunesDaemon
+from pytunes.daemon import iTunesDaemon, iTunesDaemonConfiguration, DEFAULT_CONFIGURATION_PATH
 
 DEFAULT_LOGFILE = '~/Library/Logs/itunes.log'
 
 script = Script()
 script.add_argument('-f', '--log-file', default=DEFAULT_LOGFILE, help='Log file')
+script.add_argument('-c', '--configuration-file', default=DEFAULT_CONFIGURATION_PATH, help='Log file')
 script.add_argument('-h', '--redis-host', help='Redis host')
 script.add_argument('-r', '--redis-auth', help='Redis auth')
 args = script.parse_args()
 
 try:
-    iTunesDaemon(
-        logfile=args.log_file,
-        redis_host=args.redis_host,
-        redis_auth=args.redis_auth,
-    ).run()
+    configuration = iTunesDaemonConfiguration(
+        args.configuration_file,
+        args.log_file,
+        args.redis_host,
+        args.redis_auth,
+    )
+except Exception as e:
+    script.exit(1, e)
+
+try:
+    iTunesDaemon(**configuration).run()
 except iTunesError as e:
     script.exit(1, e)
