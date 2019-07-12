@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>net.tuohela.itunesd.agent</string>
+    <string>net.tuohela.pytunesd.agent</string>
     <key>Program</key>
-    <string>/usr/local/bin/itunesd</string>
+    <string>/usr/local/bin/pytunesd</string>
     <key>RunAtLoad</key>
     <true/>
     <key>StandardErrorPath</key>
-    <string>/tmp/itunesd.stderr</string>
+    <string>/tmp/pytunesd.stderr</string>
     <key>StandardOutPath</key>
-    <string>/tmp/itunesd.stdout</string>
+    <string>/tmp/pytunesd.stdout</string>
     <key>WorkingDirectory</key>
     <string>/tmp/</string>
     <key>EnvironmentVariables</key>

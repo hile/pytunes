@@ -1,15 +1,15 @@
 """
-Python wrapper for iTunes using appscript APIs
+Python wrapper for MacOS music players (iTunes / Music) using appscript
 
 Example usage:
 
-from pytunes.client import iTunes
-client = iTunes()
+from pytunes.client import Client
+client = Client()
 
 """
 
-__version__ = '12.7.5.9'
+__version__ = '15.0.1'
 
 
-class iTunesError(Exception):
+class MusicPlayerError(Exception):
     pass

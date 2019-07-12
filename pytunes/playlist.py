@@ -1,19 +1,16 @@
-"""iTunes playlists
-
-Mapping of iTunes playlists to soundforest playlists
-"""
 
 import os
 import appscript
 import mactypes
 
-from pytunes import iTunesError
+from . import MusicPlayerError
 
 
-class iTunesPlaylist(object):
-    """iTunes playlist
+class Playlist(object):
+    """
+    Music player playlist
 
-    Abstraction of a single iTunes playlist
+    Abstraction of a single MacOS music player playlist
     """
 
     def __init__(self, client, name=None):
@@ -27,7 +24,7 @@ class iTunesPlaylist(object):
             else:
                 self.playlist = self.client.get(self.client.user_playlists[name])
         except appscript.reference.CommandError:
-            raise iTunesError('No such playlist: {0}'.format(name))
+            raise MusicPlayerError('No such playlist: {0}'.format(name))
 
         self.name = name
         self.__update_len__()
@@ -49,10 +46,10 @@ class iTunesPlaylist(object):
 
     @property
     def parent(self):
-        """Parent playlist
+        """
+        Parent playlist
 
         Return parent playlist or playlist folder
-
         """
         try:
             return self.playlist.parent.get().name.get()
@@ -99,7 +96,7 @@ class iTunesPlaylist(object):
         except appscript.reference.CommandError:
             pass
 
-        raise AttributeError('No such iTunesPlaylist item: {0}'.format(attr))
+        raise AttributeError('No such playlist item: {0}'.format(attr))
 
     def __getitem__(self, index):
         """Get track by index
@@ -127,7 +124,7 @@ class iTunesPlaylist(object):
         return self
 
     def __next__(self):
-        return self.next()
+        return self.next() # noqa B305
 
     def next(self):
         """Iterate playlist
@@ -182,4 +179,4 @@ class iTunesPlaylist(object):
                 self.__index__ -= 1
             self.__update_len__()
         except appscript.reference.CommandError as e:
-            raise iTunesError('Error deleting track {0}: {1}'.format(entry.track, e))
+            raise MusicPlayerError('Error deleting track {0}: {1}'.format(entry.track, e))

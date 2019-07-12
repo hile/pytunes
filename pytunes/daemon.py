@@ -1,27 +1,28 @@
 """
-iTunes background daemon
+Music player status background daemon
 """
 
 import configobj
 import os
 import redis
 
-from pytunes import iTunesError
-from pytunes.status import iTunesStatus
+from pytunes import MusicPlayerError
+from pytunes.status import musicPlayerStatus
 
-DEFAULT_CONFIGURATION_PATH = '~/Library/Application Support/Pytunes/itunesd.conf'
+DEFAULT_CONFIGURATION_PATH = '~/Library/Application Support/Pytunes/pytunesd.conf'
 
 # Max songs to keep in redis queue
 MAX_REDIS_LIST_ITEMS = 8000
 
-class iTunesDaemonConfiguration(dict):
-    """Configuration for iTunesDaemon
 
+class DaemonConfiguration(dict):
+    """
+    Configuration for music player daemon
     """
 
     def __init__(self,
                  path=DEFAULT_CONFIGURATION_PATH,
-                 logfile=None, redis_host=None, redis_auth=None, redis_key='itunesd'):
+                 logfile=None, redis_host=None, redis_auth=None, redis_key='pytunes/log'):
 
         self['logfile'] = logfile
         self['redis_host'] = redis_host
@@ -33,13 +34,15 @@ class iTunesDaemonConfiguration(dict):
             self.update(configobj.ConfigObj(path).items())
 
 
-class iTunesDaemon(object):
-    """Background daemon for itunes status
-
-    Daemon to monitor itunes status changes. By default just logs tracks played.
+class Daemon(object):
     """
-    def __init__(self, logfile=None, redis_host=None, redis_auth=None, redis_key='itunesd'):
-        self.monitor = iTunesStatus()
+    Background daemon for music player status
+
+    Daemon to monitor music player status changes. By default just logs tracks played.
+    """
+
+    def __init__(self, logfile=None, redis_host=None, redis_auth=None, redis_key='pytunesd'):
+        self.monitor = musicPlayerStatus()
         self.logfile = logfile
         if redis_host:
             self.redis = redis.client.StrictRedis(host=redis_host, password=redis_auth)
@@ -51,17 +54,6 @@ class iTunesDaemon(object):
             try:
                 self.redis.ping()
             except Exception as e:
-                print(e)
-
-    def run(self):
-        """Run daemon
-
-        """
-        while True:
-            status, details = self.monitor.next()
-            try:
-                self.process_track_change(status, details)
-            except iTunesError as e:
                 print(e)
 
     def log_track_change(self, details):
@@ -79,9 +71,9 @@ class iTunesDaemon(object):
                     ))
                     f.flush()
             except OSError as e:
-                raise iTunesError('Error writing to {0}: {1}'.format(self.log_file, e))
+                raise MusicPlayerError('Error writing to {0}: {1}'.format(self.log_file, e))
             except IOError as e:
-                raise iTunesError('Error writing to {0}: {1}'.format(self.log_file, e))
+                raise MusicPlayerError('Error writing to {0}: {1}'.format(self.log_file, e))
 
         if self.redis is not None:
             self.redis.lpush(self.redis_key, details)
@@ -95,3 +87,14 @@ class iTunesDaemon(object):
         """
         if status == 'playing' and details:
             self.log_track_change(details)
+
+    def run(self):
+        """Run daemon
+
+        """
+        while True:
+            status, details = self.monitor.next() # noqa B305
+            try:
+                self.process_track_change(status, details)
+            except MusicPlayerError as e:
+                print(e)

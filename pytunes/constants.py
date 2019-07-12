@@ -132,7 +132,7 @@ REPEAT_VALUES = {
     'all': appscript.k.all,
 }
 
-ITUNES_PLAYER_STATE_NAMES = {
+PLAYER_STATE_NAMES = {
     appscript.k.playing: 'playing',
     appscript.k.paused:  'paused',
     appscript.k.stopped: 'stopped',

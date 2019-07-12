@@ -48,7 +48,7 @@ class ITCArtworkFile(object):
                 )
             )
 
-        if self.image.mode != "RGB":
+        if self.image.mode != 'RGB':
             self.image = self.image.convert('RGB')
 
         self.image.save(filename)

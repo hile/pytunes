@@ -1,5 +1,5 @@
 """
-iTunes appscript terminology from osascript
+iTunes / Music appscript terminology from osascript
 """
 
 version = 1.1

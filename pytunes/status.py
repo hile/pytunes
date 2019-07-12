@@ -10,7 +10,8 @@ import appscript
 
 from lxml.builder import E
 
-from pytunes.client import iTunes, iTunesError
+from . import MusicPlayerError
+from .client import Client
 from soundforest import normalized
 
 INFO_KEY_ORDER = (
@@ -56,12 +57,12 @@ IGNORE_TRACK_FIELDS = (
 )
 
 
-class iTunesStatus(object):
+class musicPlayerStatus(object):
     """Song status change monitoring
 
-    This class can monitor status of currently playing iTunes track
-    and return track change information with next() iterator, when
-    current track changes.
+    This class can monitor status of currently playing track and
+    return track change information with next() iterator, when current
+    track changes.
     """
 
     def __init__(self, interval=1, xml_output=False, export_albumart=False):
@@ -69,14 +70,16 @@ class iTunesStatus(object):
         self.xml_output = xml_output
         self.export_albumart = export_albumart
 
+        self.__last_checked__ = None
+
         try:
-            self.client = iTunes()
+            self.client = Client()
             try:
                 self.current = self.client.current_track
                 self.status = self.client.status
             except appscript.reference.CommandError:
                 self.current = None
-        except iTunesError:
+        except MusicPlayerError:
             self.client = None
             self.current = None
             self.status = None
@@ -93,23 +96,23 @@ class iTunesStatus(object):
         while True:
             try:
                 if self.client is None:
-                    self.client = iTunes()
+                    self.client = Client()
 
                 n = self.client.current_track
                 if self.client.status != self.status:
                     self.status = self.client.status
 
                     if self.status == 'playing':
-                        return (self.status, self.songinfo(n))
+                        return self.status, self.songinfo(n)
                     else:
-                        return (self.status, None)
+                        return self.status, None
 
                 if n is not None:
                     if self.current is None or n.id != self.current.id:
                         self.current = n
-                        return (self.client.status, self.songinfo(n))
+                        return self.client.status, self.songinfo(n)
 
-            except iTunesError:
+            except MusicPlayerError:
                 self.client = None
                 pass
             except appscript.reference.CommandError:
@@ -157,7 +160,7 @@ class iTunesStatus(object):
                 return info
 
             xml = E(
-                'itunes',
+                'pytunes',
                 persistent_ID=track.persistent_ID,
                 started=info['started']
             )
@@ -172,7 +175,7 @@ class iTunesStatus(object):
                     continue
 
                 # Don't export empty fields
-                if info[k] is '':
+                if info[k] == '':
                     continue
 
                 v = info[k]
@@ -225,6 +228,6 @@ class iTunesStatus(object):
 
             return xml
 
-        except iTunesError:
+        except MusicPlayerError:
             self.client = None
             return None
