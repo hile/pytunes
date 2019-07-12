@@ -8,7 +8,7 @@ client = Client()
 
 """
 
-__version__ = '15.0.1'
+__version__ = '13.0.1'
 
 
 class MusicPlayerError(Exception):
