@@ -22,6 +22,6 @@ install_modules: build
 install: install_modules
 endif
 
-register:
-	python setup.py register sdist upload
-
+upload: clean
+	python setup.py sdist bdist_wheel
+	twine upload dist/*

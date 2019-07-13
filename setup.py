@@ -29,7 +29,7 @@ setup(
         'pytest-datafiles',
     ),
     install_requires=(
-        'soundforest>=4.2.4',
+        'oodi',
         'systematic>=4.8.0',
         'appscript',
         'configobj',

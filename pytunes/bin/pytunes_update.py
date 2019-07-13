@@ -7,7 +7,7 @@ import os
 import time
 
 from systematic.shell import Script, normalized
-from soundforest.tree import Track
+from oodi.library.track import Track
 
 from pytunes import MusicPlayerError
 from pytunes.client import Client, MusicTree
