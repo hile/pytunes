@@ -40,7 +40,7 @@ setup(
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'Intended Audience :: Power Users',
+        'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: Python Software Foundation License',
         'Operating System :: POSIX',
         'Operating System :: MacOS :: MacOS X',
