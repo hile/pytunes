@@ -65,15 +65,12 @@ class Daemon(object):
             path = os.path.expandvars(os.path.expanduser(self.logfile))
             try:
                 with open(path, 'a') as f:
-                    f.write('{0} {1}\n'.format(
-                        details['started'],
-                        details['path'],
-                    ))
+                    f.write('{} {}\n'.format(details['started'], details['path']))
                     f.flush()
             except OSError as e:
-                raise MusicPlayerError('Error writing to {0}: {1}'.format(self.log_file, e))
+                raise MusicPlayerError('Error writing to {}: {}'.format(self.log_file, e))
             except IOError as e:
-                raise MusicPlayerError('Error writing to {0}: {1}'.format(self.log_file, e))
+                raise MusicPlayerError('Error writing to {}: {}'.format(self.log_file, e))
 
         if self.redis is not None:
             self.redis.lpush(self.redis_key, details)

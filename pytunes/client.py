@@ -9,8 +9,7 @@ import re
 
 from systematic.process import Processes
 
-from soundforest.tags import TagError
-from soundforest.tree import Tree
+from oodi.library.tree import Tree
 
 from . import MusicPlayerError
 from . import terminology
@@ -24,7 +23,7 @@ from .constants import (
     PLAYER_STATE_NAMES,
     SKIPPED_PLAYLISTS
 )
-from .indexdb import IndexDB
+from .database import TrackIndexDB
 from .playlist import Playlist
 
 APPS = {
@@ -40,12 +39,15 @@ APPS = {
         'data_directory': os.path.join(os.getenv('HOME'), 'Music/Music/Music Library.musiclibrary'),
         'music_directory': os.path.join(os.getenv('HOME'), 'Music/Music/Media/Music'),
         'library_path_filename': 'library_path.txt',
-        'index_database': 'Music Track Index.sqlite'
+        'index_database': 'Tracks.sqlite'
     }
 }
 
 
 def detect_app():
+    """
+    Detect application (iTunes or Music)
+    """
     for app, config in APPS.items():
         if os.path.isfile(config['binary']):
             return app, config
@@ -53,8 +55,7 @@ def detect_app():
 
 
 class MusicTree(Tree):
-    """MacOS music tree
-
+    """
     MacOS music tree, representing one folder on disk configured as music player library path
     """
     def __init__(self, tree_path=None):
@@ -95,7 +96,7 @@ class Client(object):
             Client.__instance__ = Client.Instance(self.__app_name__, self.__binary__)
 
         self.__dict__['_Client__instance__'] = Client.__instance__
-        self.indexdb = IndexDB(self, self.__index_database__)
+        self.indexdb = TrackIndexDB(self, self.__index_database__)
 
     def __detect_application__(self):
         """
@@ -395,8 +396,7 @@ class Client(object):
 
 
 class Track(object):
-    """Track accessor
-
+    """
     Track in music player library
     """
 
@@ -413,9 +413,9 @@ class Track(object):
 
     def __repr__(self):
         return '{} - {} - {}'.format(
-            str(self.artist).encode('utf-8'),
-            str(self.album).encode('utf-8'),
-            str(self.title).encode('utf-8'),
+            self.artist,
+            self.album,
+            self.title,
         )
 
     def __getattr__(self, attr):
@@ -463,8 +463,8 @@ class Track(object):
         except AttributeError:
             pass
 
-        except appscript.reference.CommandError as e:
-            raise MusicPlayerError('Error reading track attribute: {}'.format(e))
+        except appscript.reference.CommandError:
+            return None
 
         raise KeyError('Invalid Track item: {}'.format(item))
 

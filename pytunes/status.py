@@ -12,7 +12,7 @@ from lxml.builder import E
 
 from . import MusicPlayerError
 from .client import Client
-from soundforest import normalized
+from systematic.shell import normalized
 
 INFO_KEY_ORDER = (
     'path',
@@ -183,16 +183,16 @@ class musicPlayerStatus(object):
                     if isinstance(v, int):
                         if v == 0:
                             continue
-                        xml.append(E(k, '{0:d}'.format(v)))
+                        xml.append(E(k, '{:d}'.format(v)))
                     elif isinstance(v, float):
                         if v == 0:
                             continue
-                        xml.append(E(k, '{0:3.2f}'.format(v)))
+                        xml.append(E(k, '{:3.2f}'.format(v)))
                     elif v != '':
                         xml.append(E(k, v))
 
                 except ValueError:
-                    print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
+                    print('ERROR encoding key {} type {}: {}'.format(k, type(v), v))
 
             for k in sorted(track.keys()):
                 v = track[k]
@@ -214,10 +214,10 @@ class musicPlayerStatus(object):
                         xml.append(E(k, v))
 
                 except TypeError:
-                    print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
+                    print('ERROR encoding key {} type {}: {}'.format(k, type(v), v))
 
                 except ValueError:
-                    print('ERROR encoding key {0} type {1}: {2}'.format(k, type(v), v))
+                    print('ERROR encoding key {} type {}: {}'.format(k, type(v), v))
 
             if (self.export_albumart or export_albumart) and albumart:
                 xml.append(E(

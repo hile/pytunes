@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 """
 Update music player library metadata against a music tree from command line
-
-This command expects trees to be configured to soundforest databases.
 """
 
 import os
 import time
 
-from soundforest import normalized, SoundforestError
-from soundforest.cli import Script
+from systematic.shell import Script, normalized
 from soundforest.tree import Track
 
 from pytunes import MusicPlayerError
@@ -21,7 +18,7 @@ PROGRESS_INTERVAL = 1000
 
 def main():
 
-    script = Script('pytunes-db', 'Update music player library metadata')
+    script = Script(description='Update music player library metadata')
     script.add_argument('-c', '--codec', help='Music library default codec')
     script.add_argument('-l', '--music-path', help='Music library path')
     script.add_argument('-p', '--position', type=int, help='Start from given position in library')
@@ -29,7 +26,9 @@ def main():
     args = script.parse_args()
 
     client = Client()
+
     script.log.info('Loading music player library playlist')
+
     if args.position:
         try:
             client.library.jump(args.position)
@@ -118,6 +117,7 @@ def main():
 
     start = time.time()
     processed = 0
+
     script.log.info('Checking music player database against tree files')
 
     if args.position is None:

@@ -3,7 +3,7 @@
 Daemon process to log songs played by MacOS music player
 """
 
-from soundforest.cli import Script
+from systematic.shell import Script
 from pytunes import MusicPlayerError
 from pytunes.daemon import Daemon, DaemonConfiguration, DEFAULT_CONFIGURATION_PATH
 

@@ -7,8 +7,8 @@ import shutil
 
 from operator import attrgetter
 
-from soundforest.cli import Script, ScriptCommand
-from soundforest.playlist import m3uPlaylist, m3uPlaylistDirectory, PlaylistError
+from systematic.shell import Script, ScriptCommand
+from oodi.metadata.playlist import m3uPlaylist, m3uPlaylistDirectory, PlaylistError
 
 from pytunes import MusicPlayerError
 from pytunes.client import Client

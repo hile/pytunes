@@ -24,7 +24,7 @@ class Playlist(object):
             else:
                 self.playlist = self.client.get(self.client.user_playlists[name])
         except appscript.reference.CommandError:
-            raise MusicPlayerError('No such playlist: {0}'.format(name))
+            raise MusicPlayerError('No such playlist: {}'.format(name))
 
         self.name = name
         self.__update_len__()
@@ -36,7 +36,7 @@ class Playlist(object):
             self.__len_cached__ = 0
 
     def __repr__(self):
-        return 'playlist:{0}'.format(self.name)
+        return 'playlist:{}'.format(self.name)
 
     def __len__(self):
         return self.__len_cached__
@@ -96,7 +96,7 @@ class Playlist(object):
         except appscript.reference.CommandError:
             pass
 
-        raise AttributeError('No such playlist item: {0}'.format(attr))
+        raise AttributeError('No such playlist item: {}'.format(attr))
 
     def __getitem__(self, index):
         """Get track by index
@@ -105,20 +105,22 @@ class Playlist(object):
         try:
             index = int(index)
         except ValueError:
-            raise ValueError('Invalid playlist index: {0}'.format(index))
+            raise ValueError('Invalid playlist index: {}'.format(index))
 
         if index < 0:
             index = len(self) - index
 
         try:
             index = int(index) + 1
+            if index > len(self):
+                raise StopIteration
             return self.client.get_playlist_track(self.playlist, index)
         except ValueError:
             self.__update_len__()
-            raise ValueError('Invalid playlist index: {0}'.format(index))
+            raise ValueError('Invalid playlist index: {}'.format(index))
         except appscript.reference.CommandError:
             self.__update_len__()
-            raise IndexError('Out of playlist: {0:d}'.format(index))
+            raise IndexError('Out of playlist: {:d}'.format(index))
 
     def __iter__(self):
         return self
@@ -179,4 +181,4 @@ class Playlist(object):
                 self.__index__ -= 1
             self.__update_len__()
         except appscript.reference.CommandError as e:
-            raise MusicPlayerError('Error deleting track {0}: {1}'.format(entry.track, e))
+            raise MusicPlayerError('Error deleting track {}: {}'.format(entry.track, e))

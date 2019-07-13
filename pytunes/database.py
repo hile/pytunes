@@ -13,7 +13,7 @@ from pytunes import MusicPlayerError
 
 TABLES_SQL = (
     """
-    CREATE TABLE IF NOT EXISTS pytunes (
+    CREATE TABLE IF NOT EXISTS tracks (
         key INTEGER PRIMARY KEY,
         path STRING,
         mtime INTEGER,
@@ -23,7 +23,7 @@ TABLES_SQL = (
 )
 
 
-class IndexDB(SQLiteDatabase):
+class TrackIndexDB(SQLiteDatabase):
     """
     Track index database
 
@@ -37,13 +37,13 @@ class IndexDB(SQLiteDatabase):
         return '{}'.format(self.db_path)
 
     def add_track(self, track):
-        """Add track to index
-
+        """
+        Add track to index
         """
 
         try:
             c = self.cursor
-            c.execute("""SELECT key, mtime FROM pytunes WHERE key=?""", (track.index,))
+            c.execute("""SELECT key, mtime FROM tracks WHERE key=?""", (track.index,))
             res = c.fetchone()
         except OperationalError as e:
             raise MusicPlayerError(e)
@@ -59,18 +59,18 @@ class IndexDB(SQLiteDatabase):
             if mtime:
                 if res[1] != mtime:
                     c = self.cursor
-                    c.execute("""UPDATE pytunes set mtime=? WHERE key=?""", (mtime, res[0],))
+                    c.execute("""UPDATE tracks set mtime=? WHERE key=?""", (mtime, res[0],))
                     self.commit()
             else:
                 c = self.cursor
-                c.execute("""DELETE FROM pytunes WHERE key=?""", (res[0],))
+                c.execute("""DELETE FROM tracks WHERE key=?""", (res[0],))
                 self.commit()
 
         elif mtime is not None:
             added = datetime.now(timezone('UTC'))
             try:
                 c = self.cursor
-                c.execute("""INSERT INTO pytunes VALUES (?, ?, ?, ?)""", (
+                c.execute("""INSERT INTO tracks VALUES (?, ?, ?, ?)""", (
                     track.index,
                     track.path,
                     mtime,
@@ -81,14 +81,15 @@ class IndexDB(SQLiteDatabase):
                 raise MusicPlayerError(e)
 
     def lookup_index(self, path):
-        """Find index for filename
+        """
+        Find index for filename
 
         Raises MusicPlayerError if path was not in database
         """
         path = os.path.realpath(path)
         try:
             c = self.cursor
-            c.execute("""SELECT key FROM pytunes WHERE path=?""", (path,))
+            c.execute("""SELECT key FROM tracks WHERE path=?""", (path,))
             res = c.fetchone()
         except OperationalError as e:
             raise MusicPlayerError(e)
@@ -98,21 +99,23 @@ class IndexDB(SQLiteDatabase):
             raise MusicPlayerError('Track not in index database: {}'.format(path))
 
     def cleanup(self, ids):
-        """Remove unknown IDs
+        """
+        Remove unknown IDs
 
         Removes tracks with ID not provided in list 'ids'
         """
         try:
             c = self.cursor
-            c.execute("""DELETE FROM pytunes WHERE key not in (?)""", (','.join(ids),))
+            c.execute("""DELETE FROM tracks WHERE key not in (?)""", (','.join(ids),))
             self.commit()
         except OperationalError as e:
             raise MusicPlayerError(e)
 
     def update(self):
-        """Update index
+        """
+        Update index
 
-        Update pytunes track sqlite index
+        Update tracks track sqlite index
         """
         ids = []
         for _i, track in enumerate(self.client.library):

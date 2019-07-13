@@ -5,7 +5,7 @@ Example script to view and control macos music player playback status
 
 import time
 
-from soundforest.cli import Script, ScriptCommand
+from systematic.shell import Script, ScriptCommand
 
 from pytunes import MusicPlayerError
 from pytunes.client import Client
