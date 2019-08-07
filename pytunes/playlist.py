@@ -4,6 +4,7 @@ import appscript
 import mactypes
 
 from . import MusicPlayerError
+from .track import Track
 
 
 class Playlist(object):
@@ -182,3 +183,15 @@ class Playlist(object):
             self.__update_len__()
         except appscript.reference.CommandError as e:
             raise MusicPlayerError('Error deleting track {}: {}'.format(entry.track, e))
+
+    def find(self, **kwargs):
+        """
+        Find track with metadata field kwargs using AND filter
+        """
+        args = [getattr(appscript.its, key).contains(value) for key, value in kwargs.items()]
+        if args:
+            query = args[0]
+            for q in args[1:]:
+                query = query.AND(q)
+
+        return [Track(self.client, track) for track in self.playlist.tracks[query].get()]
