@@ -89,6 +89,10 @@ TRACK_FIELDS = (
     'location',
 )
 
+MUSIC_APP_IGNORED_FIELDS = (
+    'podcast',
+)
+
 TRACK_INT_FIELDS = (
     'year',
     'id',
