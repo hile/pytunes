@@ -42,9 +42,7 @@ def main():
         tree = MusicTree(tree_path=args.music_path)
         tree.load()
         tree_paths = tree.realpaths
-    except MusicPlayerError as e:
-        script.exit(1, e)
-    except SoundforestError as e:
+    except Exception as e:
         script.exit(1, e)
 
     processed = 0
