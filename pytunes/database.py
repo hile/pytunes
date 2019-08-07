@@ -43,7 +43,12 @@ class TrackIndexDB(SQLiteDatabase):
 
         try:
             c = self.cursor
-            c.execute("""SELECT key, mtime FROM tracks WHERE key=?""", (track.index,))
+            c.execute(
+                """SELECT key, mtime FROM tracks WHERE key=?""",
+                (
+                    track.index,
+                )
+            )
             res = c.fetchone()
         except OperationalError as e:
             raise MusicPlayerError(e)
@@ -59,7 +64,13 @@ class TrackIndexDB(SQLiteDatabase):
             if mtime:
                 if res[1] != mtime:
                     c = self.cursor
-                    c.execute("""UPDATE tracks set mtime=? WHERE key=?""", (mtime, res[0],))
+                    c.execute(
+                        """UPDATE tracks set mtime=? WHERE key=?""",
+                        (
+                            mtime,
+                            res[0]
+                        )
+                    )
                     self.commit()
             else:
                 c = self.cursor
@@ -70,12 +81,15 @@ class TrackIndexDB(SQLiteDatabase):
             added = datetime.now(timezone('UTC'))
             try:
                 c = self.cursor
-                c.execute("""INSERT INTO tracks VALUES (?, ?, ?, ?)""", (
-                    track.index,
-                    track.path,
-                    mtime,
-                    added
-                ))
+                c.execute(
+                    """INSERT INTO tracks VALUES (?, ?, ?, ?)""",
+                    (
+                        track.index,
+                        track.path,
+                        mtime,
+                        added
+                    )
+                )
                 self.commit()
             except OperationalError as e:
                 raise MusicPlayerError(e)
@@ -89,7 +103,12 @@ class TrackIndexDB(SQLiteDatabase):
         path = os.path.realpath(path)
         try:
             c = self.cursor
-            c.execute("""SELECT key FROM tracks WHERE path=?""", (path,))
+            c.execute(
+                """SELECT key FROM tracks WHERE path=?""",
+                (
+                    path,
+                )
+            )
             res = c.fetchone()
         except OperationalError as e:
             raise MusicPlayerError(e)
@@ -106,7 +125,12 @@ class TrackIndexDB(SQLiteDatabase):
         """
         try:
             c = self.cursor
-            c.execute("""DELETE FROM tracks WHERE key not in (?)""", (','.join(ids),))
+            c.execute(
+                """DELETE FROM tracks WHERE key not in (?)""",
+                (
+                    ','.join(ids),
+                )
+            )
             self.commit()
         except OperationalError as e:
             raise MusicPlayerError(e)
@@ -118,8 +142,8 @@ class TrackIndexDB(SQLiteDatabase):
         Update tracks track sqlite index
         """
         ids = []
-        for _i, track in enumerate(self.client.library):
+        for track in self.client.library:
             if track.path is not None:
                 self.add_track(track)
                 ids.append('{}'.format(track.index))
-        self.cleanup(ids)
+        # self.cleanup(ids)
