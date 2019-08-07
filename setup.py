@@ -1,5 +1,4 @@
 
-import glob
 from setuptools import setup, find_packages
 from pytunes import __version__
 
